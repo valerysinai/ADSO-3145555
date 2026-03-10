@@ -329,4 +329,4 @@ Aproximadamente 4-5 semanas
 **Activity Number:** 06  
 **Phase:** Planning / Planeación  
 **Prerequisites:** Activity 05 (Prototype)  
-**SENA - ADSO Program - Ficha 3413974**
+**SENA - ADSO Program - Ficha 3145555**
