@@ -1,0 +1,645 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Tipos de documento (CC, TI, Pasaporte, etc.)
+CREATE TABLE type_document (
+    id          UUID         DEFAULT uuid_generate_v4() PRIMARY KEY,
+    code        VARCHAR(10)  NOT NULL UNIQUE,
+    name        VARCHAR(60)  NOT NULL,
+    description TEXT,
+    created_at  TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT     DEFAULT 1
+);
+
+
+-- Personas (base para usuarios, clientes y proveedores)
+CREATE TABLE person (
+    id               UUID         DEFAULT uuid_generate_v4() PRIMARY KEY,
+    type_document_id UUID         NOT NULL REFERENCES type_document(id),
+    document_number  VARCHAR(20)  NOT NULL UNIQUE,
+    first_name       VARCHAR(80)  NOT NULL,
+    last_name        VARCHAR(80)  NOT NULL,
+    email            VARCHAR(120) NOT NULL UNIQUE,
+    phone            VARCHAR(20),
+    birth_date       DATE,
+    created_at       TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ,
+    deleted_at       TIMESTAMPTZ,
+    created_by       UUID,
+    updated_by       UUID,
+    deleted_by       UUID,
+    status           SMALLINT     DEFAULT 1
+);
+
+
+-- Archivos adjuntos de personas (fotos, documentos, etc.)
+CREATE TABLE file (
+    id          UUID          DEFAULT uuid_generate_v4() PRIMARY KEY,
+    person_id   UUID          NOT NULL REFERENCES person(id),
+    file_name   VARCHAR(200)  NOT NULL,
+    file_path   TEXT          NOT NULL,
+    file_type   VARCHAR(50),
+    file_size   BIGINT,
+    created_at  TIMESTAMPTZ   DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT      DEFAULT 1
+);
+
+
+-- Roles del sistema (Administrador, Cajero, Barista, etc.)
+CREATE TABLE role (
+    id          UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name        VARCHAR(60) NOT NULL UNIQUE,
+    description TEXT,
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT    DEFAULT 1
+);
+
+
+-- Módulos del sistema (Inventario, Ventas, Facturación, etc.)
+CREATE TABLE module (
+    id          UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name        VARCHAR(80) NOT NULL UNIQUE,
+    icon        VARCHAR(50),
+    order_index SMALLINT,
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT    DEFAULT 1
+);
+
+
+-- Vistas/pantallas del sistema (cada pantalla dentro de un módulo)
+CREATE TABLE view (
+    id          UUID         DEFAULT uuid_generate_v4() PRIMARY KEY,
+    module_id   UUID         NOT NULL REFERENCES module(id),
+    name        VARCHAR(80)  NOT NULL,
+    route       VARCHAR(120),
+    order_index SMALLINT,
+    created_at  TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT     DEFAULT 1
+);
+
+
+-- Usuarios del sistema (empleados que inician sesión)
+CREATE TABLE "user" (
+    id            UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    person_id     UUID        NOT NULL REFERENCES person(id),
+    username      VARCHAR(60) NOT NULL UNIQUE,
+    password_hash TEXT        NOT NULL,
+    last_login    TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ,
+    deleted_at    TIMESTAMPTZ,
+    created_by    UUID,
+    updated_by    UUID,
+    deleted_by    UUID,
+    status        SMALLINT    DEFAULT 1
+);
+
+
+-- Relación usuario ↔ rol (un usuario puede tener varios roles)
+CREATE TABLE user_role (
+    id          UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id     UUID        NOT NULL REFERENCES "user"(id),
+    role_id     UUID        NOT NULL REFERENCES role(id),
+    assigned_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT    DEFAULT 1
+);
+
+
+-- Relación rol ↔ módulo (qué módulos puede ver cada rol)
+CREATE TABLE role_module (
+    id        UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    role_id   UUID        NOT NULL REFERENCES role(id),
+    module_id UUID        NOT NULL REFERENCES module(id),
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT    DEFAULT 1
+);
+
+
+-- Relación módulo ↔ vista con permisos de lectura/escritura/borrado
+CREATE TABLE module_view (
+    id         UUID    DEFAULT uuid_generate_v4() PRIMARY KEY,
+    module_id  UUID    NOT NULL REFERENCES module(id),
+    view_id    UUID    NOT NULL REFERENCES view(id),
+    can_read   BOOLEAN DEFAULT FALSE,
+    can_write  BOOLEAN DEFAULT FALSE,
+    can_delete BOOLEAN DEFAULT FALSE,
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT    DEFAULT 1
+);
+
+
+-- Categorías de productos (Cafés, Panadería, Snacks, etc.)
+CREATE TABLE category (
+    id          UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name        VARCHAR(80) NOT NULL UNIQUE,
+    description TEXT,
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT    DEFAULT 1
+);
+
+
+-- Proveedores (empresa que vende los insumos)
+CREATE TABLE supplier (
+    id           UUID         DEFAULT uuid_generate_v4() PRIMARY KEY,
+    person_id    UUID         NOT NULL REFERENCES person(id),
+    company_name VARCHAR(120) NOT NULL,
+    address      TEXT,
+    tax_id       VARCHAR(30)  UNIQUE,
+    created_at   TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ,
+    deleted_at   TIMESTAMPTZ,
+    created_by   UUID,
+    updated_by   UUID,
+    deleted_by   UUID,
+    status       SMALLINT     DEFAULT 1
+);
+
+
+-- Productos del menú y para venta
+CREATE TABLE product (
+    id          UUID          DEFAULT uuid_generate_v4() PRIMARY KEY,
+    category_id UUID          NOT NULL REFERENCES category(id),
+    supplier_id UUID          NOT NULL REFERENCES supplier(id),
+    sku         VARCHAR(40)   NOT NULL UNIQUE,
+    name        VARCHAR(120)  NOT NULL,
+    description TEXT,
+    unit_price  NUMERIC(10,2) NOT NULL,
+    cost_price  NUMERIC(10,2),
+    image_url   TEXT,
+    created_at  TIMESTAMPTZ   DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT      DEFAULT 1
+);
+
+
+-- Inventario (cuántas unidades hay de cada producto)
+CREATE TABLE inventory (
+    id           UUID          DEFAULT uuid_generate_v4() PRIMARY KEY,
+    product_id   UUID          NOT NULL UNIQUE REFERENCES product(id),
+    quantity     NUMERIC(10,3) DEFAULT 0,
+    min_stock    NUMERIC(10,3),
+    location     VARCHAR(80),
+    last_restock TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ   DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ,
+    deleted_at   TIMESTAMPTZ,
+    created_by   UUID,
+    updated_by   UUID,
+    deleted_by   UUID,
+    status       SMALLINT      DEFAULT 1
+);
+
+
+-- Clientes de la cafetería
+CREATE TABLE customer (
+    id             UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    person_id      UUID        NOT NULL REFERENCES person(id),
+    loyalty_points INTEGER     DEFAULT 0,
+    notes          TEXT,
+    created_at     TIMESTAMPTZ DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ,
+    deleted_at     TIMESTAMPTZ,
+    created_by     UUID,
+    updated_by     UUID,
+    deleted_by     UUID,
+    status         SMALLINT    DEFAULT 1
+);
+
+
+-- Métodos de pago disponibles
+CREATE TABLE method_payment (
+    id                 UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name               VARCHAR(60) NOT NULL UNIQUE,
+    description        TEXT,
+    requires_reference BOOLEAN     DEFAULT FALSE,
+    created_at         TIMESTAMPTZ DEFAULT NOW(),
+    updated_at         TIMESTAMPTZ,
+    deleted_at         TIMESTAMPTZ,
+    created_by         UUID,
+    updated_by         UUID,
+    deleted_by         UUID,
+    status             SMALLINT    DEFAULT 1
+);
+
+
+-- Pedidos (cada compra que hace un cliente)
+CREATE TABLE "order" (
+    id           UUID          DEFAULT uuid_generate_v4() PRIMARY KEY,
+    customer_id  UUID          NOT NULL REFERENCES customer(id),
+    user_id      UUID          NOT NULL REFERENCES "user"(id),
+    order_date   TIMESTAMPTZ   DEFAULT NOW(),
+    total_amount NUMERIC(12,2) NOT NULL,
+    order_type   VARCHAR(20),
+    notes        TEXT,
+    created_at   TIMESTAMPTZ   DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ,
+    deleted_at   TIMESTAMPTZ,
+    created_by   UUID,
+    updated_by   UUID,
+    deleted_by   UUID,
+    status       SMALLINT      DEFAULT 1
+);
+
+
+-- Detalle del pedido (qué productos y cuántos trae cada pedido)
+CREATE TABLE order_item (
+    id         UUID          DEFAULT uuid_generate_v4() PRIMARY KEY,
+    order_id   UUID          NOT NULL REFERENCES "order"(id),
+    product_id UUID          NOT NULL REFERENCES product(id),
+    quantity   NUMERIC(8,3)  NOT NULL,
+    unit_price NUMERIC(10,2) NOT NULL,
+    subtotal   NUMERIC(12,2) NOT NULL,
+    notes      TEXT,
+    created_at  TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT     DEFAULT 1
+);
+
+
+-- Facturas generadas por cada pedido
+CREATE TABLE invoice (
+    id             UUID          DEFAULT uuid_generate_v4() PRIMARY KEY,
+    order_id       UUID          NOT NULL REFERENCES "order"(id),
+    customer_id    UUID          NOT NULL REFERENCES customer(id),
+    invoice_number VARCHAR(30)   NOT NULL UNIQUE,
+    issue_date     TIMESTAMPTZ   DEFAULT NOW(),
+    subtotal       NUMERIC(12,2) NOT NULL,
+    tax_amount     NUMERIC(12,2) NOT NULL,
+    total_amount   NUMERIC(12,2) NOT NULL,
+    due_date       DATE,
+    created_at     TIMESTAMPTZ   DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ,
+    deleted_at     TIMESTAMPTZ,
+    created_by     UUID,
+    updated_by     UUID,
+    deleted_by     UUID,
+    status         SMALLINT      DEFAULT 1
+);
+
+
+-- Detalle de la factura (productos que aparecen en la factura)
+CREATE TABLE invoice_item (
+    id         UUID          DEFAULT uuid_generate_v4() PRIMARY KEY,
+    invoice_id UUID          NOT NULL REFERENCES invoice(id),
+    product_id UUID          NOT NULL REFERENCES product(id),
+    quantity   NUMERIC(8,3)  NOT NULL,
+    unit_price NUMERIC(10,2) NOT NULL,
+    tax_rate   NUMERIC(5,2)  DEFAULT 0,
+    subtotal   NUMERIC(12,2) NOT NULL,
+    created_at  TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ,
+    deleted_at  TIMESTAMPTZ,
+    created_by  UUID,
+    updated_by  UUID,
+    deleted_by  UUID,
+    status      SMALLINT     DEFAULT 1
+);
+
+
+-- Pagos realizados sobre una factura
+CREATE TABLE payment (
+    id                UUID          DEFAULT uuid_generate_v4() PRIMARY KEY,
+    invoice_id        UUID          NOT NULL REFERENCES invoice(id),
+    method_payment_id UUID          NOT NULL REFERENCES method_payment(id),
+    amount            NUMERIC(12,2) NOT NULL,
+    payment_date      TIMESTAMPTZ   DEFAULT NOW(),
+    reference         VARCHAR(80),
+    notes             TEXT,
+    created_at        TIMESTAMPTZ   DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ,
+    deleted_at        TIMESTAMPTZ,
+    created_by        UUID,
+    updated_by        UUID,
+    deleted_by        UUID,
+    status            SMALLINT      DEFAULT 1
+);
+
+
+--Insert (10 por cada tabla)
+
+INSERT INTO type_document (id, code, name) VALUES
+('00000001-0000-0000-0000-000000000001', 'CC',  'Cédula de Ciudadanía'),
+('00000001-0000-0000-0000-000000000002', 'TI',  'Tarjeta de Identidad'),
+('00000001-0000-0000-0000-000000000003', 'CE',  'Cédula de Extranjería'),
+('00000001-0000-0000-0000-000000000004', 'PA',  'Pasaporte'),
+('00000001-0000-0000-0000-000000000005', 'NIT', 'NIT Empresa'),
+('00000001-0000-0000-0000-000000000006', 'RUT', 'Registro Único Tributario'),
+('00000001-0000-0000-0000-000000000007', 'DIE', 'DNI Extranjero'),
+('00000001-0000-0000-0000-000000000008', 'PEP', 'Permiso Especial Permanencia'),
+('00000001-0000-0000-0000-000000000009', 'RC',  'Registro Civil'),
+('00000001-0000-0000-0000-000000000010', 'VISA','Visa de Trabajo');
+
+
+INSERT INTO person (id, type_document_id, document_number, first_name, last_name, email, phone, birth_date) VALUES
+('00000002-0000-0000-0000-000000000001', '00000001-0000-0000-0000-000000000001', '1020304050', 'Carlos',    'Ramírez',  'carlos.ramirez@cafe.com',   '3101234567', '1990-05-15'),
+('00000002-0000-0000-0000-000000000002', '00000001-0000-0000-0000-000000000001', '1122334455', 'Ana',       'Gómez',    'ana.gomez@cafe.com',        '3209876543', '1993-08-22'),
+('00000002-0000-0000-0000-000000000003', '00000001-0000-0000-0000-000000000001', '9988776655', 'Luis',      'Martínez', 'luis.martinez@cafe.com',    '3154567890', '1988-11-30'),
+('00000002-0000-0000-0000-000000000004', '00000001-0000-0000-0000-000000000003', 'CE5544332',  'Sophie',    'Müller',   'sophie.muller@cafe.com',    '3001112233', '1995-03-10'),
+('00000002-0000-0000-0000-000000000005', '00000001-0000-0000-0000-000000000001', '7766554433', 'Valentina', 'Torres',   'vale.torres@cafe.com',      '3178889900', '1997-07-04'),
+('00000002-0000-0000-0000-000000000006', '00000001-0000-0000-0000-000000000001', '3344556677', 'Miguel',    'Herrera',  'miguel.herrera@gmail.com',  '3122334455', '1985-12-20'),
+('00000002-0000-0000-0000-000000000007', '00000001-0000-0000-0000-000000000001', '4455667788', 'Laura',     'Jiménez',  'laura.jimenez@gmail.com',   '3056677889', '1992-09-14'),
+('00000002-0000-0000-0000-000000000008', '00000001-0000-0000-0000-000000000004', 'PA998877A',  'James',     'Wilson',   'james.wilson@gmail.com',    '3144455667', '1980-01-28'),
+('00000002-0000-0000-0000-000000000009', '00000001-0000-0000-0000-000000000001', '5566778899', 'Diana',     'Castro',   'diana.castro@gmail.com',    '3167778899', '1998-06-17'),
+('00000002-0000-0000-0000-000000000010', '00000001-0000-0000-0000-000000000005', '900123456-1','Pedro',     'Salcedo',  'pedro.salcedo@proveed.com', '6018889900', '1975-04-05');
+
+
+INSERT INTO file (id, person_id, file_name, file_path, file_type, file_size) VALUES
+('00000003-0000-0000-0000-000000000001', '00000002-0000-0000-0000-000000000001', 'cedula_carlos.pdf',    '/docs/cedula_carlos.pdf',    'application/pdf', 204800),
+('00000003-0000-0000-0000-000000000002', '00000002-0000-0000-0000-000000000002', 'cedula_ana.pdf',       '/docs/cedula_ana.pdf',       'application/pdf', 198400),
+('00000003-0000-0000-0000-000000000003', '00000002-0000-0000-0000-000000000003', 'cedula_luis.pdf',      '/docs/cedula_luis.pdf',      'application/pdf', 215040),
+('00000003-0000-0000-0000-000000000004', '00000002-0000-0000-0000-000000000004', 'ce_sophie.pdf',        '/docs/ce_sophie.pdf',        'application/pdf', 189440),
+('00000003-0000-0000-0000-000000000005', '00000002-0000-0000-0000-000000000005', 'cedula_vale.pdf',      '/docs/cedula_vale.pdf',      'application/pdf', 201728),
+('00000003-0000-0000-0000-000000000006', '00000002-0000-0000-0000-000000000006', 'foto_miguel.jpg',      '/docs/foto_miguel.jpg',      'image/jpeg',       51200),
+('00000003-0000-0000-0000-000000000007', '00000002-0000-0000-0000-000000000007', 'contrato_laura.pdf',   '/docs/contrato_laura.pdf',   'application/pdf', 512000),
+('00000003-0000-0000-0000-000000000008', '00000002-0000-0000-0000-000000000008', 'passport_james.pdf',   '/docs/passport_james.pdf',   'application/pdf', 307200),
+('00000003-0000-0000-0000-000000000009', '00000002-0000-0000-0000-000000000009', 'cedula_diana.jpg',     '/docs/cedula_diana.jpg',     'image/jpeg',       45056),
+('00000003-0000-0000-0000-000000000010', '00000002-0000-0000-0000-000000000010', 'rut_pedro.pdf',        '/docs/rut_pedro.pdf',        'application/pdf', 256000);
+
+
+INSERT INTO role (id, name, description) VALUES
+('00000004-0000-0000-0000-000000000001', 'Administrador', 'Acceso total al sistema'),
+('00000004-0000-0000-0000-000000000002', 'Cajero',        'Gestión de ventas y cobros'),
+('00000004-0000-0000-0000-000000000003', 'Barista',       'Preparación de pedidos'),
+('00000004-0000-0000-0000-000000000004', 'Supervisor',    'Supervisión de operaciones'),
+('00000004-0000-0000-0000-000000000005', 'Bodeguero',     'Control de inventario'),
+('00000004-0000-0000-0000-000000000006', 'Contador',      'Gestión de facturación'),
+('00000004-0000-0000-0000-000000000007', 'Analista',      'Consulta de reportes'),
+('00000004-0000-0000-0000-000000000008', 'Domiciliario',  'Pedidos a domicilio'),
+('00000004-0000-0000-0000-000000000009', 'Marketing',     'Fidelización de clientes'),
+('00000004-0000-0000-0000-000000000010', 'Soporte TI',    'Administración técnica');
+
+
+INSERT INTO module (id, name, icon, order_index) VALUES
+('00000005-0000-0000-0000-000000000001', 'Parámetros',  'settings',      1),
+('00000005-0000-0000-0000-000000000002', 'Seguridad',   'shield',        2),
+('00000005-0000-0000-0000-000000000003', 'Inventario',  'package',       3),
+('00000005-0000-0000-0000-000000000004', 'Ventas',      'shopping-cart', 4),
+('00000005-0000-0000-0000-000000000005', 'Facturación', 'file-text',     5),
+('00000005-0000-0000-0000-000000000006', 'Reportes',    'bar-chart',     6),
+('00000005-0000-0000-0000-000000000007', 'Clientes',    'users',         7),
+('00000005-0000-0000-0000-000000000008', 'Proveedores', 'truck',         8),
+('00000005-0000-0000-0000-000000000009', 'Productos',   'coffee',        9),
+('00000005-0000-0000-0000-000000000010', 'Configuración','sliders',     10);
+
+
+INSERT INTO view (id, module_id, name, route, order_index) VALUES
+('00000006-0000-0000-0000-000000000001', '00000005-0000-0000-0000-000000000001', 'Tipos de Documento', '/params/type-document', 1),
+('00000006-0000-0000-0000-000000000002', '00000005-0000-0000-0000-000000000001', 'Personas',           '/params/persons',       2),
+('00000006-0000-0000-0000-000000000003', '00000005-0000-0000-0000-000000000002', 'Usuarios',           '/security/users',       1),
+('00000006-0000-0000-0000-000000000004', '00000005-0000-0000-0000-000000000002', 'Roles',              '/security/roles',       2),
+('00000006-0000-0000-0000-000000000005', '00000005-0000-0000-0000-000000000002', 'Módulos',            '/security/modules',     3),
+('00000006-0000-0000-0000-000000000006', '00000005-0000-0000-0000-000000000003', 'Categorías',         '/inventory/categories', 1),
+('00000006-0000-0000-0000-000000000007', '00000005-0000-0000-0000-000000000003', 'Productos',          '/inventory/products',   2),
+('00000006-0000-0000-0000-000000000008', '00000005-0000-0000-0000-000000000004', 'Pedidos',            '/sales/orders',         1),
+('00000006-0000-0000-0000-000000000009', '00000005-0000-0000-0000-000000000005', 'Facturas',           '/billing/invoices',     1),
+('00000006-0000-0000-0000-000000000010', '00000005-0000-0000-0000-000000000005', 'Pagos',              '/billing/payments',     2);
+
+
+INSERT INTO "user" (id, person_id, username, password_hash) VALUES
+('00000007-0000-0000-0000-000000000001', '00000002-0000-0000-0000-000000000001', 'carlos.admin',    '$2b$12$hash_carlos'),
+('00000007-0000-0000-0000-000000000002', '00000002-0000-0000-0000-000000000002', 'ana.cajera',      '$2b$12$hash_ana'),
+('00000007-0000-0000-0000-000000000003', '00000002-0000-0000-0000-000000000003', 'luis.barista',    '$2b$12$hash_luis'),
+('00000007-0000-0000-0000-000000000004', '00000002-0000-0000-0000-000000000004', 'sophie.superv',   '$2b$12$hash_sophie'),
+('00000007-0000-0000-0000-000000000005', '00000002-0000-0000-0000-000000000005', 'vale.bodeguera',  '$2b$12$hash_vale'),
+('00000007-0000-0000-0000-000000000006', '00000002-0000-0000-0000-000000000006', 'miguel.contador', '$2b$12$hash_miguel'),
+('00000007-0000-0000-0000-000000000007', '00000002-0000-0000-0000-000000000007', 'laura.analista',  '$2b$12$hash_laura'),
+('00000007-0000-0000-0000-000000000008', '00000002-0000-0000-0000-000000000008', 'james.delivery',  '$2b$12$hash_james'),
+('00000007-0000-0000-0000-000000000009', '00000002-0000-0000-0000-000000000009', 'diana.marketing', '$2b$12$hash_diana'),
+('00000007-0000-0000-0000-000000000010', '00000002-0000-0000-0000-000000000010', 'pedro.proveedor', '$2b$12$hash_pedro');
+
+
+INSERT INTO user_role (id, user_id, role_id) VALUES
+('00000008-0000-0000-0000-000000000001', '00000007-0000-0000-0000-000000000001', '00000004-0000-0000-0000-000000000001'),
+('00000008-0000-0000-0000-000000000002', '00000007-0000-0000-0000-000000000002', '00000004-0000-0000-0000-000000000002'),
+('00000008-0000-0000-0000-000000000003', '00000007-0000-0000-0000-000000000003', '00000004-0000-0000-0000-000000000003'),
+('00000008-0000-0000-0000-000000000004', '00000007-0000-0000-0000-000000000004', '00000004-0000-0000-0000-000000000004'),
+('00000008-0000-0000-0000-000000000005', '00000007-0000-0000-0000-000000000005', '00000004-0000-0000-0000-000000000005'),
+('00000008-0000-0000-0000-000000000006', '00000007-0000-0000-0000-000000000006', '00000004-0000-0000-0000-000000000006'),
+('00000008-0000-0000-0000-000000000007', '00000007-0000-0000-0000-000000000007', '00000004-0000-0000-0000-000000000007'),
+('00000008-0000-0000-0000-000000000008', '00000007-0000-0000-0000-000000000008', '00000004-0000-0000-0000-000000000008'),
+('00000008-0000-0000-0000-000000000009', '00000007-0000-0000-0000-000000000009', '00000004-0000-0000-0000-000000000009'),
+('00000008-0000-0000-0000-000000000010', '00000007-0000-0000-0000-000000000010', '00000004-0000-0000-0000-000000000010');
+
+
+INSERT INTO role_module (id, role_id, module_id) VALUES
+('00000009-0000-0000-0000-000000000001', '00000004-0000-0000-0000-000000000001', '00000005-0000-0000-0000-000000000001'),
+('00000009-0000-0000-0000-000000000002', '00000004-0000-0000-0000-000000000001', '00000005-0000-0000-0000-000000000002'),
+('00000009-0000-0000-0000-000000000003', '00000004-0000-0000-0000-000000000001', '00000005-0000-0000-0000-000000000003'),
+('00000009-0000-0000-0000-000000000004', '00000004-0000-0000-0000-000000000002', '00000005-0000-0000-0000-000000000004'),
+('00000009-0000-0000-0000-000000000005', '00000004-0000-0000-0000-000000000002', '00000005-0000-0000-0000-000000000005'),
+('00000009-0000-0000-0000-000000000006', '00000004-0000-0000-0000-000000000003', '00000005-0000-0000-0000-000000000004'),
+('00000009-0000-0000-0000-000000000007', '00000004-0000-0000-0000-000000000005', '00000005-0000-0000-0000-000000000003'),
+('00000009-0000-0000-0000-000000000008', '00000004-0000-0000-0000-000000000005', '00000005-0000-0000-0000-000000000008'),
+('00000009-0000-0000-0000-000000000009', '00000004-0000-0000-0000-000000000006', '00000005-0000-0000-0000-000000000005'),
+('00000009-0000-0000-0000-000000000010', '00000004-0000-0000-0000-000000000007', '00000005-0000-0000-0000-000000000006');
+
+
+INSERT INTO module_view (id, module_id, view_id, can_read, can_write, can_delete) VALUES
+('0000000a-0000-0000-0000-000000000001', '00000005-0000-0000-0000-000000000001', '00000006-0000-0000-0000-000000000001', TRUE, TRUE,  TRUE),
+('0000000a-0000-0000-0000-000000000002', '00000005-0000-0000-0000-000000000001', '00000006-0000-0000-0000-000000000002', TRUE, TRUE,  FALSE),
+('0000000a-0000-0000-0000-000000000003', '00000005-0000-0000-0000-000000000002', '00000006-0000-0000-0000-000000000003', TRUE, TRUE,  TRUE),
+('0000000a-0000-0000-0000-000000000004', '00000005-0000-0000-0000-000000000002', '00000006-0000-0000-0000-000000000004', TRUE, TRUE,  FALSE),
+('0000000a-0000-0000-0000-000000000005', '00000005-0000-0000-0000-000000000002', '00000006-0000-0000-0000-000000000005', TRUE, FALSE, FALSE),
+('0000000a-0000-0000-0000-000000000006', '00000005-0000-0000-0000-000000000003', '00000006-0000-0000-0000-000000000006', TRUE, TRUE,  TRUE),
+('0000000a-0000-0000-0000-000000000007', '00000005-0000-0000-0000-000000000003', '00000006-0000-0000-0000-000000000007', TRUE, TRUE,  FALSE),
+('0000000a-0000-0000-0000-000000000008', '00000005-0000-0000-0000-000000000004', '00000006-0000-0000-0000-000000000008', TRUE, TRUE,  FALSE),
+('0000000a-0000-0000-0000-000000000009', '00000005-0000-0000-0000-000000000005', '00000006-0000-0000-0000-000000000009', TRUE, TRUE,  FALSE),
+('0000000a-0000-0000-0000-000000000010', '00000005-0000-0000-0000-000000000005', '00000006-0000-0000-0000-000000000010', TRUE, FALSE, FALSE);
+
+
+INSERT INTO category (id, name, description) VALUES
+('0000000b-0000-0000-0000-000000000001', 'Cafés Calientes',     'Espresso, americano, capuchino y preparaciones calientes'),
+('0000000b-0000-0000-0000-000000000002', 'Cafés Fríos',         'Frappés, cold brew y café helado'),
+('0000000b-0000-0000-0000-000000000003', 'Bebidas Sin Café',    'Té, chocolate, jugos naturales'),
+('0000000b-0000-0000-0000-000000000004', 'Panadería',           'Croissants, muffins, tortas y galletas'),
+('0000000b-0000-0000-0000-000000000005', 'Snacks Salados',      'Sándwiches, tostadas y wraps'),
+('0000000b-0000-0000-0000-000000000006', 'Granos y Mezclas',    'Café en grano y molido para venta'),
+('0000000b-0000-0000-0000-000000000007', 'Lácteos e Insumos',   'Leche, crema, siropes y azúcar'),
+('0000000b-0000-0000-0000-000000000008', 'Merchandising',       'Tazas, termos y artículos de marca'),
+('0000000b-0000-0000-0000-000000000009', 'Postres',             'Brownies, cheesecake y postres del día'),
+('0000000b-0000-0000-0000-000000000010', 'Desayunos',           'Combos y platos de desayuno completos');
+
+
+INSERT INTO supplier (id, person_id, company_name, address, tax_id) VALUES
+('0000000c-0000-0000-0000-000000000001', '00000002-0000-0000-0000-000000000010', 'Café del Huila S.A.S.',     'Cra 5 #10-20, Neiva',       '900123456-1'),
+('0000000c-0000-0000-0000-000000000002', '00000002-0000-0000-0000-000000000006', 'Distribuidora La Espiga',   'Calle 15 #8-40, Bogotá',    '800234567-2'),
+('0000000c-0000-0000-0000-000000000003', '00000002-0000-0000-0000-000000000007', 'Lácteos del Campo Ltda.',   'Km 3 Vía Palermo, Huila',   '890345678-3'),
+('0000000c-0000-0000-0000-000000000004', '00000002-0000-0000-0000-000000000008', 'EuroPastry Colombia S.A.',  'Zona Industrial, Medellín', '860456789-4'),
+('0000000c-0000-0000-0000-000000000005', '00000002-0000-0000-0000-000000000009', 'Insumos y Siropes J&M',     'Av 19 #32-10, Bogotá',      '830567890-5'),
+('0000000c-0000-0000-0000-000000000006', '00000002-0000-0000-0000-000000000006', 'Tostadores del Sur',        'Cra 2 #5-15, Pitalito',     '820678901-6'),
+('0000000c-0000-0000-0000-000000000007', '00000002-0000-0000-0000-000000000007', 'Empaques y Diseño S.A.',    'Parque Industrial, Cali',   '810789012-7'),
+('0000000c-0000-0000-0000-000000000008', '00000002-0000-0000-0000-000000000008', 'Frutas Frescas del Tolima', 'Carretera Central, Ibagué', '805890123-8'),
+('0000000c-0000-0000-0000-000000000009', '00000002-0000-0000-0000-000000000009', 'Heladería Artesanal Milenio','Calle 20 #14-50, Neiva',   '901901234-9'),
+('0000000c-0000-0000-0000-000000000010', '00000002-0000-0000-0000-000000000010', 'Merchan Colombia',          'Cra 30 #45-67, Bogotá',     '900012345-0');
+
+
+INSERT INTO product (id, category_id, supplier_id, sku, name, unit_price, cost_price) VALUES
+('0000000d-0000-0000-0000-000000000001', '0000000b-0000-0000-0000-000000000001', '0000000c-0000-0000-0000-000000000001', 'CAF-001', 'Espresso Simple',       4500.00, 1200.00),
+('0000000d-0000-0000-0000-000000000002', '0000000b-0000-0000-0000-000000000001', '0000000c-0000-0000-0000-000000000001', 'CAF-002', 'Capuchino Clásico',     7000.00, 2100.00),
+('0000000d-0000-0000-0000-000000000003', '0000000b-0000-0000-0000-000000000002', '0000000c-0000-0000-0000-000000000001', 'CAF-003', 'Frappé de Caramelo',    9500.00, 3200.00),
+('0000000d-0000-0000-0000-000000000004', '0000000b-0000-0000-0000-000000000004', '0000000c-0000-0000-0000-000000000002', 'PAN-001', 'Croissant Mantequilla', 5500.00, 1800.00),
+('0000000d-0000-0000-0000-000000000005', '0000000b-0000-0000-0000-000000000004', '0000000c-0000-0000-0000-000000000002', 'PAN-002', 'Muffin de Arándanos',   5000.00, 1600.00),
+('0000000d-0000-0000-0000-000000000006', '0000000b-0000-0000-0000-000000000005', '0000000c-0000-0000-0000-000000000002', 'SNK-001', 'Sándwich Pollo Grill', 12000.00, 4500.00),
+('0000000d-0000-0000-0000-000000000007', '0000000b-0000-0000-0000-000000000006', '0000000c-0000-0000-0000-000000000006', 'GRN-001', 'Café Molido 250g',     18000.00, 8000.00),
+('0000000d-0000-0000-0000-000000000008', '0000000b-0000-0000-0000-000000000003', '0000000c-0000-0000-0000-000000000005', 'BEB-001', 'Té Chai Latte',         7500.00, 2400.00),
+('0000000d-0000-0000-0000-000000000009', '0000000b-0000-0000-0000-000000000009', '0000000c-0000-0000-0000-000000000009', 'POS-001', 'Brownie Chocolate',     6000.00, 2000.00),
+('0000000d-0000-0000-0000-000000000010', '0000000b-0000-0000-0000-000000000010', '0000000c-0000-0000-0000-000000000002', 'DSY-001', 'Desayuno Ejecutivo',   22000.00, 9000.00);
+
+
+INSERT INTO inventory (id, product_id, quantity, min_stock, location) VALUES
+('0000000e-0000-0000-0000-000000000001', '0000000d-0000-0000-0000-000000000001', 500, 100, 'Bodega A - Estante 1'),
+('0000000e-0000-0000-0000-000000000002', '0000000d-0000-0000-0000-000000000002', 480,  80, 'Bodega A - Estante 1'),
+('0000000e-0000-0000-0000-000000000003', '0000000d-0000-0000-0000-000000000003', 200,  50, 'Bodega B - Refrigerador'),
+('0000000e-0000-0000-0000-000000000004', '0000000d-0000-0000-0000-000000000004',  60,  20, 'Vitrina Panadería'),
+('0000000e-0000-0000-0000-000000000005', '0000000d-0000-0000-0000-000000000005',  55,  20, 'Vitrina Panadería'),
+('0000000e-0000-0000-0000-000000000006', '0000000d-0000-0000-0000-000000000006',  30,  10, 'Refrigerador Cocina'),
+('0000000e-0000-0000-0000-000000000007', '0000000d-0000-0000-0000-000000000007',  40,  10, 'Bodega A - Estante 3'),
+('0000000e-0000-0000-0000-000000000008', '0000000d-0000-0000-0000-000000000008', 300,  60, 'Bodega A - Estante 2'),
+('0000000e-0000-0000-0000-000000000009', '0000000d-0000-0000-0000-000000000009',  45,  15, 'Vitrina Postres'),
+('0000000e-0000-0000-0000-000000000010', '0000000d-0000-0000-0000-000000000010',  80,  20, 'Cocina Principal');
+
+
+INSERT INTO customer (id, person_id, loyalty_points, notes) VALUES
+('0000000f-0000-0000-0000-000000000001', '00000002-0000-0000-0000-000000000006', 1250, 'Cliente VIP'),
+('0000000f-0000-0000-0000-000000000002', '00000002-0000-0000-0000-000000000007',  870, 'Alérgica al gluten'),
+('0000000f-0000-0000-0000-000000000003', '00000002-0000-0000-0000-000000000008',  430, 'Paga con tarjeta'),
+('0000000f-0000-0000-0000-000000000004', '00000002-0000-0000-0000-000000000009',  200, 'Cliente nueva'),
+('0000000f-0000-0000-0000-000000000005', '00000002-0000-0000-0000-000000000001', 3500, 'Pide capuchino doble'),
+('0000000f-0000-0000-0000-000000000006', '00000002-0000-0000-0000-000000000002',  980, 'Visita diario 8-9am'),
+('0000000f-0000-0000-0000-000000000007', '00000002-0000-0000-0000-000000000003',  120, 'Solo fines de semana'),
+('0000000f-0000-0000-0000-000000000008', '00000002-0000-0000-0000-000000000004', 2100, 'Trae laptop siempre'),
+('0000000f-0000-0000-0000-000000000009', '00000002-0000-0000-0000-000000000005',  660, 'Desayuno ejecutivo'),
+('0000000f-0000-0000-0000-000000000010', '00000002-0000-0000-0000-000000000010',   50, 'Cliente corporativo');
+
+
+INSERT INTO method_payment (id, name, requires_reference) VALUES
+('00000010-0000-0000-0000-000000000001', 'Efectivo',              FALSE),
+('00000010-0000-0000-0000-000000000002', 'Tarjeta Débito',        TRUE),
+('00000010-0000-0000-0000-000000000003', 'Tarjeta Crédito',       TRUE),
+('00000010-0000-0000-0000-000000000004', 'Nequi',                 TRUE),
+('00000010-0000-0000-0000-000000000005', 'Daviplata',             TRUE),
+('00000010-0000-0000-0000-000000000006', 'Transferencia / PSE',   TRUE),
+('00000010-0000-0000-0000-000000000007', 'QR Bancolombia',        TRUE),
+('00000010-0000-0000-0000-000000000008', 'Bono Regalo',           TRUE),
+('00000010-0000-0000-0000-000000000009', 'Puntos Fidelidad',      TRUE),
+('00000010-0000-0000-0000-000000000010', 'Pago Mixto',            TRUE);
+
+
+INSERT INTO "order" (id, customer_id, user_id, order_date, total_amount, order_type) VALUES
+('00000011-0000-0000-0000-000000000001', '0000000f-0000-0000-0000-000000000001', '00000007-0000-0000-0000-000000000002', '2025-03-08 08:05:00', 16500.00, 'mesa'),
+('00000011-0000-0000-0000-000000000002', '0000000f-0000-0000-0000-000000000002', '00000007-0000-0000-0000-000000000002', '2025-03-08 08:30:00',  9500.00, 'mesa'),
+('00000011-0000-0000-0000-000000000003', '0000000f-0000-0000-0000-000000000003', '00000007-0000-0000-0000-000000000003', '2025-03-08 09:00:00', 27500.00, 'mesa'),
+('00000011-0000-0000-0000-000000000004', '0000000f-0000-0000-0000-000000000004', '00000007-0000-0000-0000-000000000002', '2025-03-08 09:15:00', 22000.00, 'domicilio'),
+('00000011-0000-0000-0000-000000000005', '0000000f-0000-0000-0000-000000000005', '00000007-0000-0000-0000-000000000003', '2025-03-08 09:45:00', 11500.00, 'mesa'),
+('00000011-0000-0000-0000-000000000006', '0000000f-0000-0000-0000-000000000006', '00000007-0000-0000-0000-000000000002', '2025-03-08 10:00:00',  4500.00, 'para_llevar'),
+('00000011-0000-0000-0000-000000000007', '0000000f-0000-0000-0000-000000000007', '00000007-0000-0000-0000-000000000003', '2025-03-08 10:30:00', 18000.00, 'mesa'),
+('00000011-0000-0000-0000-000000000008', '0000000f-0000-0000-0000-000000000008', '00000007-0000-0000-0000-000000000002', '2025-03-08 11:00:00', 14500.00, 'mesa'),
+('00000011-0000-0000-0000-000000000009', '0000000f-0000-0000-0000-000000000009', '00000007-0000-0000-0000-000000000003', '2025-03-08 07:30:00', 22000.00, 'mesa'),
+('00000011-0000-0000-0000-000000000010', '0000000f-0000-0000-0000-000000000010', '00000007-0000-0000-0000-000000000002', '2025-03-07 15:00:00', 90000.00, 'corporativo');
+
+
+INSERT INTO order_item (id, order_id, product_id, quantity, unit_price, subtotal) VALUES
+('00000012-0000-0000-0000-000000000001', '00000011-0000-0000-0000-000000000001', '0000000d-0000-0000-0000-000000000002', 1,  7000.00,  7000.00),
+('00000012-0000-0000-0000-000000000002', '00000011-0000-0000-0000-000000000001', '0000000d-0000-0000-0000-000000000004', 1,  5500.00,  5500.00),
+('00000012-0000-0000-0000-000000000003', '00000011-0000-0000-0000-000000000002', '0000000d-0000-0000-0000-000000000003', 1,  9500.00,  9500.00),
+('00000012-0000-0000-0000-000000000004', '00000011-0000-0000-0000-000000000003', '0000000d-0000-0000-0000-000000000006', 1, 12000.00, 12000.00),
+('00000012-0000-0000-0000-000000000005', '00000011-0000-0000-0000-000000000003', '0000000d-0000-0000-0000-000000000001', 2,  4500.00,  9000.00),
+('00000012-0000-0000-0000-000000000006', '00000011-0000-0000-0000-000000000004', '0000000d-0000-0000-0000-000000000010', 1, 22000.00, 22000.00),
+('00000012-0000-0000-0000-000000000007', '00000011-0000-0000-0000-000000000005', '0000000d-0000-0000-0000-000000000002', 1,  7000.00,  7000.00),
+('00000012-0000-0000-0000-000000000008', '00000011-0000-0000-0000-000000000007', '0000000d-0000-0000-0000-000000000007', 1, 18000.00, 18000.00),
+('00000012-0000-0000-0000-000000000009', '00000011-0000-0000-0000-000000000008', '0000000d-0000-0000-0000-000000000008', 1,  7500.00,  7500.00),
+('00000012-0000-0000-0000-000000000010', '00000011-0000-0000-0000-000000000009', '0000000d-0000-0000-0000-000000000010', 1, 22000.00, 22000.00);
+
+
+INSERT INTO invoice (id, order_id, customer_id, invoice_number, subtotal, tax_amount, total_amount, due_date) VALUES
+('00000013-0000-0000-0000-000000000001', '00000011-0000-0000-0000-000000000001', '0000000f-0000-0000-0000-000000000001', 'INV-2025-001', 13866.39,  2633.61, 16500.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000002', '00000011-0000-0000-0000-000000000002', '0000000f-0000-0000-0000-000000000002', 'INV-2025-002',  7983.19,  1516.81,  9500.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000003', '00000011-0000-0000-0000-000000000003', '0000000f-0000-0000-0000-000000000003', 'INV-2025-003', 23109.24,  4390.76, 27500.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000004', '00000011-0000-0000-0000-000000000004', '0000000f-0000-0000-0000-000000000004', 'INV-2025-004', 18487.39,  3512.61, 22000.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000005', '00000011-0000-0000-0000-000000000005', '0000000f-0000-0000-0000-000000000005', 'INV-2025-005',  9663.87,  1836.13, 11500.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000006', '00000011-0000-0000-0000-000000000006', '0000000f-0000-0000-0000-000000000006', 'INV-2025-006',  3781.51,   718.49,  4500.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000007', '00000011-0000-0000-0000-000000000007', '0000000f-0000-0000-0000-000000000007', 'INV-2025-007', 15126.05,  2873.95, 18000.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000008', '00000011-0000-0000-0000-000000000008', '0000000f-0000-0000-0000-000000000008', 'INV-2025-008', 12184.87,  2315.13, 14500.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000009', '00000011-0000-0000-0000-000000000009', '0000000f-0000-0000-0000-000000000009', 'INV-2025-009', 18487.39,  3512.61, 22000.00, '2025-03-08'),
+('00000013-0000-0000-0000-000000000010', '00000011-0000-0000-0000-000000000010', '0000000f-0000-0000-0000-000000000010', 'INV-2025-010', 90000.00,     0.00, 90000.00, '2025-03-14');
+
+
+INSERT INTO invoice_item (id, invoice_id, product_id, quantity, unit_price, tax_rate, subtotal) VALUES
+('00000014-0000-0000-0000-000000000001', '00000013-0000-0000-0000-000000000001', '0000000d-0000-0000-0000-000000000002', 1,  7000.00, 19.00,  7000.00),
+('00000014-0000-0000-0000-000000000002', '00000013-0000-0000-0000-000000000001', '0000000d-0000-0000-0000-000000000004', 1,  5500.00, 19.00,  5500.00),
+('00000014-0000-0000-0000-000000000003', '00000013-0000-0000-0000-000000000002', '0000000d-0000-0000-0000-000000000003', 1,  9500.00, 19.00,  9500.00),
+('00000014-0000-0000-0000-000000000004', '00000013-0000-0000-0000-000000000003', '0000000d-0000-0000-0000-000000000006', 1, 12000.00, 19.00, 12000.00),
+('00000014-0000-0000-0000-000000000005', '00000013-0000-0000-0000-000000000003', '0000000d-0000-0000-0000-000000000001', 2,  4500.00, 19.00,  9000.00),
+('00000014-0000-0000-0000-000000000006', '00000013-0000-0000-0000-000000000004', '0000000d-0000-0000-0000-000000000010', 1, 22000.00, 19.00, 22000.00),
+('00000014-0000-0000-0000-000000000007', '00000013-0000-0000-0000-000000000005', '0000000d-0000-0000-0000-000000000002', 1,  7000.00, 19.00,  7000.00),
+('00000014-0000-0000-0000-000000000008', '00000013-0000-0000-0000-000000000007', '0000000d-0000-0000-0000-000000000007', 1, 18000.00, 19.00, 18000.00),
+('00000014-0000-0000-0000-000000000009', '00000013-0000-0000-0000-000000000008', '0000000d-0000-0000-0000-000000000008', 1,  7500.00, 19.00,  7500.00),
+('00000014-0000-0000-0000-000000000010', '00000013-0000-0000-0000-000000000009', '0000000d-0000-0000-0000-000000000010', 1, 22000.00, 19.00, 22000.00);
+
+
+INSERT INTO payment (id, invoice_id, method_payment_id, amount, reference) VALUES
+('00000015-0000-0000-0000-000000000001', '00000013-0000-0000-0000-000000000001', '00000010-0000-0000-0000-000000000001', 16500.00, NULL),
+('00000015-0000-0000-0000-000000000002', '00000013-0000-0000-0000-000000000002', '00000010-0000-0000-0000-000000000004',  9500.00, 'NEQ-20250308-001'),
+('00000015-0000-0000-0000-000000000003', '00000013-0000-0000-0000-000000000003', '00000010-0000-0000-0000-000000000003', 27500.00, 'VISA-****4512'),
+('00000015-0000-0000-0000-000000000004', '00000013-0000-0000-0000-000000000004', '00000010-0000-0000-0000-000000000002', 22000.00, 'DB-****8801'),
+('00000015-0000-0000-0000-000000000005', '00000013-0000-0000-0000-000000000005', '00000010-0000-0000-0000-000000000007', 11500.00, 'QR-20250308-002'),
+('00000015-0000-0000-0000-000000000006', '00000013-0000-0000-0000-000000000006', '00000010-0000-0000-0000-000000000001',  4500.00, NULL),
+('00000015-0000-0000-0000-000000000007', '00000013-0000-0000-0000-000000000007', '00000010-0000-0000-0000-000000000005', 18000.00, 'DAV-20250308-003'),
+('00000015-0000-0000-0000-000000000008', '00000013-0000-0000-0000-000000000008', '00000010-0000-0000-0000-000000000009', 14500.00, 'PTS-00002100'),
+('00000015-0000-0000-0000-000000000009', '00000013-0000-0000-0000-000000000009', '00000010-0000-0000-0000-000000000001', 22000.00, NULL),
+('00000015-0000-0000-0000-000000000010', '00000013-0000-0000-0000-000000000010', '00000010-0000-0000-0000-000000000006', 90000.00, 'PSE-20250307-001');
+
+
