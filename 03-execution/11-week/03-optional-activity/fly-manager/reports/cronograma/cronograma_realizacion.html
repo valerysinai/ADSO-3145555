@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cronograma de Evolucion | FLY Data Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f1f2f8;
+      --ink: #1a2036;
+      --ink-soft: #61667c;
+      --surface: rgba(255, 255, 255, 0.86);
+      --surface-strong: #ffffff;
+      --line: rgba(26, 32, 54, 0.12);
+      --line-strong: rgba(26, 32, 54, 0.22);
+      --primary: #2f4eb3;
+      --teal: #1f7a70;
+      --amber: #b97722;
+      --ok: #1d875a;
+      --future: #7d53ca;
+      --shadow-lg: 0 20px 56px rgba(26, 32, 54, 0.14);
+      --shadow-md: 0 12px 28px rgba(26, 32, 54, 0.1);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --font-main: "Sora", "Segoe UI", sans-serif;
+      --font-mono: "IBM Plex Mono", "Consolas", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-main);
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% -8%, rgba(47, 78, 179, 0.2), rgba(47, 78, 179, 0) 40%),
+        radial-gradient(circle at 88% -12%, rgba(31, 122, 112, 0.15), rgba(31, 122, 112, 0) 38%),
+        linear-gradient(180deg, #f8f9ff 0%, #eeeff8 52%, #e8eaf4 100%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--ink-soft); line-height: 1.7; }
+
+    .topbar,
+    .page,
+    .footer {
+      width: min(1240px, calc(100% - 34px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      margin-top: 16px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.66);
+      background: rgba(255, 255, 255, 0.68);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 12px;
+      z-index: 30;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      min-width: 54px;
+      border-radius: 999px;
+      padding: 10px 12px;
+      text-align: center;
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      background: linear-gradient(140deg, var(--primary), var(--teal));
+      box-shadow: 0 10px 22px rgba(47, 78, 179, 0.28);
+    }
+
+    .brand-copy {
+      display: grid;
+      gap: 2px;
+    }
+
+    .brand-copy strong { font-size: 0.92rem; }
+    .brand-copy small { font-size: 0.74rem; color: var(--ink-soft); }
+
+    .topnav {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .topnav a {
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--ink-soft);
+      font-size: 0.84rem;
+      font-weight: 600;
+      transition: 0.2s ease;
+    }
+
+    .topnav a:hover { background: rgba(26, 32, 54, 0.08); color: var(--ink); }
+    .topnav a.active { background: rgba(47, 78, 179, 0.14); color: var(--primary); }
+
+    .state-pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--teal);
+      border: 1px solid rgba(31, 122, 112, 0.24);
+      background: rgba(31, 122, 112, 0.1);
+      white-space: nowrap;
+    }
+
+    .page {
+      margin-top: 16px;
+      margin-bottom: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero,
+    .section,
+    .footer {
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .hero {
+      padding: 24px;
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1.18fr 0.82fr;
+    }
+
+    .hero-main,
+    .hero-side {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      background: var(--surface-strong);
+    }
+
+    .hero-main {
+      background:
+        radial-gradient(circle at 95% 8%, rgba(47, 78, 179, 0.12), rgba(47, 78, 179, 0) 30%),
+        linear-gradient(165deg, rgba(255, 255, 255, 0.96), rgba(250, 252, 255, 0.9));
+    }
+
+    .kicker {
+      display: inline-flex;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: rgba(47, 78, 179, 0.1);
+    }
+
+    h1 {
+      margin: 14px 0 12px;
+      font-size: clamp(1.7rem, 3.4vw, 2.65rem);
+      line-height: 1.08;
+      max-width: 16ch;
+    }
+
+    .hero-actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .hero-actions a {
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 9px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(47, 78, 179, 0.08);
+    }
+
+    .hero-actions a.primary {
+      color: #fff;
+      background: linear-gradient(140deg, var(--primary), var(--teal));
+      border-color: transparent;
+      box-shadow: 0 10px 20px rgba(47, 78, 179, 0.25);
+    }
+
+    .legend {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .legend span {
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .legend .done { color: var(--ok); }
+    .legend .run { color: var(--amber); }
+    .legend .plan { color: var(--future); }
+
+    .hero-side h2 {
+      margin: 0 0 6px;
+      font-size: 1.1rem;
+    }
+
+    .hero-side ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .hero-side li {
+      color: var(--ink-soft);
+      line-height: 1.5;
+      font-size: 0.9rem;
+    }
+
+    .section {
+      padding: 22px;
+    }
+
+    .section-head {
+      margin-bottom: 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(1.25rem, 2.3vw, 2rem);
+      line-height: 1.15;
+      max-width: 24ch;
+    }
+
+    .strip {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .strip-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fff;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .strip-card strong {
+      display: block;
+      font-size: 1.35rem;
+      line-height: 1;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .strip-card span {
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(47, 78, 179, 0.45), rgba(31, 122, 112, 0.3));
+    }
+
+    .timeline-item {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fff;
+      margin-left: 32px;
+      padding: 14px 14px 14px 16px;
+    }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -24px;
+      top: 20px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 0 4px rgba(47, 78, 179, 0.14);
+    }
+
+    .timeline-item.current::before {
+      background: var(--amber);
+      box-shadow: 0 0 0 4px rgba(185, 119, 34, 0.2);
+    }
+
+    .timeline-item h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+
+    .meta {
+      margin-top: 8px;
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: #27406a;
+      background: rgba(47, 78, 179, 0.12);
+    }
+
+    .two-col,
+    .artifact-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .artifact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fff;
+      padding: 14px;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 0.98rem;
+      line-height: 1.3;
+    }
+
+    .card ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .card li {
+      color: var(--ink-soft);
+      line-height: 1.5;
+      font-size: 0.9rem;
+    }
+
+    .artifact a {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .footer {
+      padding: 16px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .footer p {
+      margin-top: 4px;
+      max-width: 64ch;
+      font-size: 0.86rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .footer-links a {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(47, 78, 179, 0.08);
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    @media (max-width: 1140px) {
+      .hero,
+      .strip,
+      .two-col,
+      .artifact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        border-radius: 22px;
+        position: static;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar,
+      .page,
+      .footer {
+        width: min(100%, calc(100% - 18px));
+      }
+
+      .topbar,
+      .hero,
+      .section,
+      .footer,
+      .hero-main,
+      .hero-side {
+        padding: 14px;
+      }
+
+      h1,
+      .section-head h2 {
+        max-width: none;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+      }
+
+      .hero-actions a {
+        width: 100%;
+        text-align: center;
+      }
+
+      .timeline-item {
+        margin-left: 24px;
+      }
+
+      .timeline::before {
+        left: 10px;
+      }
+
+      .timeline-item::before {
+        left: -18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../app/landing/index.html">
+      <span class="brand-badge">FLY</span>
+      <span class="brand-copy">
+        <strong>Data Platform Portal</strong>
+        <small>Vista de evolucion y continuidad</small>
+      </span>
+    </a>
+    <nav class="topnav" aria-label="Navegacion principal">
+      <a href="../../app/landing/index.html">Portal</a>
+      <a href="../../architecture/canvas/canvas_arquitectura.html">Canvas</a>
+      <a href="../html/funcionalidades_sistema.html">Funcionalidades</a>
+      <a href="cronograma_realizacion.html" class="active">Cronograma</a>
+    </nav>
+    <span class="state-pill">Evolucion 19-20 Mar 2026</span>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <article class="hero-main">
+        <span class="kicker">Cronograma de evolucion</span>
+        <h1>Trayectoria del baseline desde release congelado hasta CI inicial.</h1>
+        <p>
+          Esta vista muestra el progreso real de estabilizacion por fecha y por
+          frente, con foco en hitos cerrados, estado actual y proximo tramo
+          recomendado para mantener continuidad del delivery de base de datos.
+        </p>
+        <div class="hero-actions">
+          <a class="primary" href="../../docs/planes/ROADMAP_ESTABILIZACION_DB_SENIOR.md">Roadmap senior</a>
+          <a href="../../reports/html/funcionalidades_sistema.html">Ver capacidades</a>
+          <a href="../../docs/validacion/EVIDENCIA_PIPELINE_CI_REMOTO_2026-03-20.md">Evidencia CI</a>
+        </div>
+        <div class="legend">
+          <span class="done">Completado</span>
+          <span class="run">En curso</span>
+          <span class="plan">Siguiente fase</span>
+        </div>
+      </article>
+
+      <aside class="hero-side">
+        <h2>Estado al 20-Mar-2026</h2>
+        <p>Resumen de continuidad tecnica sin fallas bloqueantes.</p>
+        <ul>
+          <li>S2 completo: migraciones, rollback, backup/restore y runbook.</li>
+          <li>S3 completo: performance, observabilidad y hardening local.</li>
+          <li>S4 completo: secretos, menor privilegio, confinamiento y aislamiento admin.</li>
+          <li>F1 inicial completo: db-gate remoto y release guard versionado.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="section">
+      <header class="section-head">
+        <h2>Indicadores de avance</h2>
+        <p>Medidas del tramo tecnico cerrado.</p>
+      </header>
+      <div class="strip">
+        <article class="strip-card"><strong>4</strong><span>fases mayores cerradas</span></article>
+        <article class="strip-card"><strong>1</strong><span>pipeline CI remoto activo</span></article>
+        <article class="strip-card"><strong>0</strong><span>residuales expuestos al host</span></article>
+        <article class="strip-card"><strong>78</strong><span>tablas comparadas en recovery</span></article>
+        <article class="strip-card"><strong>6</strong><span>consultas baseline medidas</span></article>
+      </div>
+    </section>
+
+    <section class="section">
+      <header class="section-head">
+        <h2>Linea de tiempo del baseline</h2>
+        <p>Hitos confirmados en orden de ejecucion.</p>
+      </header>
+      <div class="timeline">
+        <article class="timeline-item">
+          <h3>Release congelado (19-Mar-2026)</h3>
+          <p>DDL, seeds, QA cruzado y narrativa base alineados como referencia comun.</p>
+          <span class="meta">Estado: completado</span>
+        </article>
+        <article class="timeline-item">
+          <h3>S2 Gobierno operativo (19-Mar-2026)</h3>
+          <p>Migraciones versionadas, rollback, backup/restore y runbook local operativos.</p>
+          <span class="meta">Estado: completado</span>
+        </article>
+        <article class="timeline-item">
+          <h3>S3 Capacidad y seguridad (19-20 Mar 2026)</h3>
+          <p>Performance baseline, observabilidad minima y hardening local en verde.</p>
+          <span class="meta">Estado: completado</span>
+        </article>
+        <article class="timeline-item">
+          <h3>S4 Continuidad operativa (20-Mar-2026)</h3>
+          <p>Secretos, menor privilegio, rebuild unificado y admin bootstrap aislado.</p>
+          <span class="meta">Estado: completado</span>
+        </article>
+        <article class="timeline-item current">
+          <h3>F1 Industrializacion inicial (20-Mar-2026)</h3>
+          <p>Workflow db-gate en GitHub Actions y control de promocion formalizado.</p>
+          <span class="meta">Estado: completado</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="two-col">
+        <article class="card">
+          <h3>Cierre del tramo actual</h3>
+          <ul>
+            <li>No hay brechas bloqueantes sobre el baseline local.</li>
+            <li>La reconstruccion deterministica se mantiene trazable.</li>
+            <li>La validacion documental y de control de promocion esta activa.</li>
+            <li>El paquete se mantiene apto para consumo por equipos de aplicacion.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Siguiente foco recomendado</h3>
+          <ul>
+            <li>Aplicar branch protection en GitHub para cerrar capa administrativa.</li>
+            <li>Continuar industrializacion sin introducir cambio de stack prematuro.</li>
+            <li>Completar V3-V5 del frente visual para unificar toda la capa HTML.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <header class="section-head">
+        <h2>Evidencias del cronograma</h2>
+        <p>Documentos que respaldan cada hito.</p>
+      </header>
+      <div class="artifact-grid">
+        <article class="card artifact">
+          <h3>Continuidad</h3>
+          <ul>
+            <li><a href="../../docs/planes/PLAN_CONTINUIDAD_FASES_2026-03-19.md">Plan continuidad</a></li>
+            <li><a href="../../docs/planes/ROADMAP_ESTABILIZACION_DB_SENIOR.md">Roadmap senior</a></li>
+          </ul>
+        </article>
+        <article class="card artifact">
+          <h3>Operacion y seguridad</h3>
+          <ul>
+            <li><a href="../../docs/validacion/EVIDENCIA_AUDITORIA_SEGURIDAD_LOCAL_2026-03-20.md">Auditoria seguridad</a></li>
+            <li><a href="../../docs/validacion/EVIDENCIA_MENOR_PRIVILEGIO_OPERATIVO_LOCAL_2026-03-20.md">Menor privilegio</a></li>
+          </ul>
+        </article>
+        <article class="card artifact">
+          <h3>CI y promocion</h3>
+          <ul>
+            <li><a href="../../docs/validacion/EVIDENCIA_PIPELINE_CI_REMOTO_2026-03-20.md">Evidencia CI</a></li>
+            <li><a href="../../docs/validacion/CHECKLIST_PROMOCION_CI_DB.md">Checklist promocion</a></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>
+      <strong>Cronograma FLY</strong>
+      <p>Trazabilidad temporal de estabilizacion y arranque de industrializacion DB.</p>
+    </div>
+    <div class="footer-links">
+      <a href="../../app/landing/index.html">Portal</a>
+      <a href="../../architecture/canvas/canvas_arquitectura.html">Canvas</a>
+      <a href="../html/funcionalidades_sistema.html">Funcionalidades</a>
+    </div>
+  </footer>
+</body>
+</html>
