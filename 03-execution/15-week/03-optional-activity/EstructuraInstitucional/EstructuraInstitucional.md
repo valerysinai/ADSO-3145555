@@ -40,7 +40,7 @@ distancia_sedes  (tabla auxiliar: tiempo de desplazamiento entre pares de sedes)
 ### 2. `regional`
 **¿Para qué?** Representa cada departamento de Colombia donde el SENA tiene presencia.
 
-**Campos clave:** `nombre`, `codigo` (código DANE), `total_centros`
+**Campos clave:** `nombre`, `codigo` (Codigo DANE), `total_centros`
 
 **Datos reales de la imagen:**
 | Regional | Centros |
@@ -57,7 +57,7 @@ distancia_sedes  (tabla auxiliar: tiempo de desplazamiento entre pares de sedes)
 | Atlántico | 4 |
 | ... y 22 regionales más | ... |
 
-**Justificación:** La imagen del instructor muestra explícitamente las 32+ regionales con sus centros. Sin esta entidad no es posible filtrar centros por región ni gobernar la operación por territorio.
+**Justificación:** La imagen muestra explícitamente las 32+ regionales con sus centros. Sin esta entidad no es posible filtrar centros por región ni gobernar la operación por territorio.
 
 ---
 
@@ -142,7 +142,7 @@ distancia_sedes  (tabla auxiliar: tiempo de desplazamiento entre pares de sedes)
 
 ---
 
-### 8. `distancia_sedes` ← **Nueva entidad — origen: audio del instructor**
+### 8. `distancia_sedes` ← **Nueva entidad 
 **¿Para qué?** Precalcula y almacena el tiempo estimado de desplazamiento en minutos entre cada par de sedes del SENA.
 
 **Campos clave:**
@@ -165,7 +165,7 @@ El Motor de Horarios (**Módulo 8**) consulta esta tabla **antes de asignar un b
 
 ---
 
-### 9. `traslado_instructor` ← **Nueva entidad — origen: audio del instructor**
+### 9. `traslado_instructor` ← **Nueva entidad 
 **¿Para qué?** Registra cuando un instructor es "prestado" temporalmente de su centro de formación de origen a otro centro receptor, transfiriendo con él sus horas disponibles.
 
 **Campos clave:**
