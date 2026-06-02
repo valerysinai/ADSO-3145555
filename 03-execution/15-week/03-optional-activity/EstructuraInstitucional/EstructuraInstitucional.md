@@ -2,6 +2,13 @@
 ## Entidades, relaciones y justificación
 
 ---
+Link repo Majo:
+
+[ADSO-3145555/03-execution/15-week/03-optional-activity at main · MariaOyola/ADSO-3145555 · GitHub](https://github.com/MariaOyola/ADSO-3145555/tree/main/03-execution/15-week/03-optional-activity)
+
+Link repo Mariana:
+
+[GitHub - pemarival/15-week_02-06-26_modulo_estructura_institucional_del_sena · GitHub](https://github.com/pemarival/15-week_02-06-26_modulo_estructura_institucional_del_sena)
 
 ## Jerarquía del módulo
 
