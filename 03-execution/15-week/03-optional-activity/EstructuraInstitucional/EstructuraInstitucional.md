@@ -19,7 +19,7 @@ pais
              └── centro_formacion  (118 centros oficiales)
                    ├── sede  (ubicaciones físicas del centro)  ←── latitud/longitud OBLIGATORIOS
                    ├── nodo_sena  (Tecnoacademias y Tecnoparques)
-                   └── traslado_instructor  (instructor prestado temporalmente a otro centro)
+                   └── traslado_instructor 
 
 distancia_sedes  (tabla auxiliar: tiempo de desplazamiento entre pares de sedes)
 ```
