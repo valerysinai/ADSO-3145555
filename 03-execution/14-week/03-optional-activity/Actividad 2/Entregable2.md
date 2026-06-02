@@ -1,309 +1,294 @@
-# Entregable 2 — Módulos del Sistema de Gestión de Horarios SENA
-## Justificación de origen por archivo del instructor
+# Módulos del Sistema de Gestión de Horarios SENA
+**Entregable 2 — Listado de módulos y justificación de origen**
+
+> Basado en los **4 archivos entregados por el instructor**:
+> - `sena-schedule-manager-v6.zip` → V6 (versión base)
+> - `PRJ-SCHEDULE-SENA-V7.zip` → V7 (ciclo de vida de proyecto)
+> - `PRJ-SENA-SCHEDULE-V8.zip` → V8 (versión técnica más completa)
+> - `sena-schedule-manager-v9.zip` → V9 (versión refinada final)
 
 ---
 
-## Contexto de los archivos entregados
+## Cómo se identificaron los módulos
 
-El instructor entregó **4 archivos** con versiones evolutivas del mismo proyecto:
+Cada módulo se identificó cruzando **tres fuentes**:
 
-| Archivo | Versión | Archivos clave |
-|---|---|---|
-| `sena-schedule-manager-v6.zip` | V6 — MVP inicial | `requirements.md`, `data-model.md`, `prd.md` |
-| `PRJ-SCHEDULE-SENA-V7.zip` | V7 — Refinamiento | `prd.md`, `data-model.md`, `backlog.md` |
-| `PRJ-SENA-SCHEDULE-V8.zip` | V8 — Expansión técnica | `requirements.md`, `data-model.md`, `ux-contract.md`, `security-threat-model.md` |
-| `sena-schedule-manager-v9.zip` | V9 — Versión más completa | `requirements.md`, `data-model.md`, `db-design.md` |
-
-Cada versión amplió entidades, requisitos funcionales y restricciones. Los módulos del sistema se derivan directamente del contenido de estos archivos, complementados con el funcionamiento real del SENA.
+1. **Archivos del instructor (V6→V9):** `requirements.md`, `data-model.md`, `db-design.md`, `ux-contract.md`, `prd.md`, `backlog.md`, `security-threat-model.md`.
+2. **Propuesta visual del instructor:** imagen de 15 módulos con descripción de cada uno.
+3. **Funcionamiento real del SENA:** estructura institucional (Decreto 249/2004), portal SOFIA Plus, diseño curricular oficial.
 
 ---
 
-## Módulos del Sistema
+## Módulo 1 — Seguridad y Acceso
+**Tablas:** `user`, `role`, `user_role`, `permission`, `session`
 
-### Grupo 1 — Gestión de Personas
+**¿Qué hace?**
+Gestiona autenticación, roles, permisos por módulo, sesiones activas y trazabilidad básica de acceso para todos los actores del sistema.
 
----
-
-#### Módulo 1: Instructores
-
-**¿De dónde sale?**
-
-Presente desde V6. En `requirements.md` V6 aparece como requisito funcional explícito:
-
-> *"Create and list instructor records with staff or contractor type."* — FR3, V6
-
-En V8 (`requirements.md`) se amplía:
-
-> *"The system must allow coordinators to create, update, list, and deactivate instructors."* — FR3, V8
-
-En V9 el `data-model.md` define la entidad `instructor` con atributos: `first_name`, `last_name`, `email`, `document_id`, `hire_type`, `expertise_area`, `is_active`.
-
-**Justificación:** Es la entidad central del sistema. Sin instructores no hay horario posible. Aparece en los 4 archivos del instructor como entidad obligatoria.
+**Justificación por archivo:**
+- **V8 `requirements.md`** → `user_roles`: coordinador académico, instructor, administrador. Tres roles distintos con permisos diferentes.
+- **V8 `requirements.md`** → `NFR8`: *"CORS must not be open by default"* — implica control de acceso a nivel de red y sesión.
+- **V8 `ux-contract.md`** → pantallas explícitas: `LoginScreen`, `UnauthorizedScreen (403)`, `NotFoundScreen (404)`.
+- **V8 `security-threat-model.md`** → controles de autenticación, manejo de sesiones, restricción de CORS.
+- **V9 `security-threat-model.md`** → amplía controles de acceso y validación de tokens.
+- **V6 `requirements.md`** → *"backend sanitizes internal errors, restricts CORS, declares timeouts and avoids client-side secret storage"*.
+- **V7 `appsec-report.md`** → evidencia de controles OWASP aplicados al sistema.
 
 ---
 
-#### Módulo 2: Tipo de Contrato del Instructor
+## Módulo 2 — Estructura Institucional
+**Tablas:** `regional`, `training_center`, `headquarter`
 
-**¿De dónde sale?**
+**¿Qué hace?**
+Administra la jerarquía organizacional del SENA: regional → centro de formación → sede, para ubicar y gobernar la operación académica.
 
-En V6 (`data-model.md`) el instructor tiene el atributo `instructor_type` con valores `"staff|contractor"`.
-
-En V8 (`requirements.md`) se formaliza como requisito independiente:
-
-> *"The system must classify instructors by contract type: staff or contractor."* — FR4, V8
-
-En V9 (`data-model.md`) el atributo se llama `hire_type` con valores `"permanent"` o `"contractor"`.
-
-**Justificación:** En el SENA coexisten instructores de planta (funcionarios públicos) y contratistas (OPS). Esta distinción afecta la carga horaria máxima permitida por ley (Circular 079 de 2024). Los 4 archivos del instructor reconocen esta diferenciación como dato obligatorio del instructor.
-
----
-
-#### Módulo 3: Usuarios y Roles
-
-**¿De dónde sale?**
-
-En V8 (`requirements.md`) se define explícitamente la sección `user_roles`:
-
-> *"Academic coordinator: manages schedules, environments, groups, instructors, and observations."*
-> *"Instructor: views assigned schedules and related observations."*
-> *"Administrator: validates operational data and system readiness."*
-
-En V7 (`prd.md`) aparece el rol `admin`:
-
-> *"HU-001: As an admin, I want to create an instructor."*
-
-En V8 (`ux-contract.md`) se definen flujos diferenciados por tipo de usuario.
-
-**Justificación:** Los 4 archivos contemplan al menos dos actores distintos (coordinador e instructor) con accesos diferenciados. Sin un módulo de usuarios y roles no es posible implementar los flujos de cada actor.
+**Justificación por archivo:**
+- **V8 `requirements.md`** → contexto: *"Internal scheduling product for **training center** operations"* — el sistema opera dentro de un centro de formación específico.
+- **V8 `data-model.md`** → los instructores y ambientes pertenecen a un centro; sin esta jerarquía no es posible filtrar por sede.
+- **V9 `data-model.md`** → `room.location` presupone una ubicación física dentro de una estructura institucional.
+- **V6 `requirements.md`** → `classroom.location` (campo de ubicación del aula) apunta a una sede específica.
+- **Contexto SENA:** Decreto 249 de 2004 define la estructura: Direcciones Regionales → Centros de Formación Profesional Integral → Sedes. Sin este módulo el sistema no puede escalar a múltiples centros.
 
 ---
 
-### Grupo 2 — Estructura Académica
+## Módulo 3 — Catálogos Base
+**Tablas:** `catalog_type`, `catalog_item`, `time_slot`
+
+**¿Qué hace?**
+Centraliza parámetros maestros del sistema: jornadas, estados, tipos de ambiente, modalidades y demás configuraciones reutilizables.
+
+**Justificación por archivo:**
+- **V8 `data-model.md`** → múltiples campos con `allowed_values` (status, type, hire_type) que en un sistema real se gestionan como catálogos configurables, no como valores fijos en código.
+- **V7 `data-model.md`** → entidad `TimeSlot` explícita: `time_slot_id`, `day_of_week`, `start_time`, `end_time`. Es la primera vez que aparece como entidad independiente.
+- **V7 `backlog.md`** → `HU-003: Create Time Slot` con criterio *"End > Start time"*.
+- **V9 `data-model.md`** → `catalog_item` referenciado como entidad de configuración separada.
+- **V8/V9 `db-design.md`** → colecciones de referencia para valores permitidos de estado, tipo y jornada.
 
 ---
 
-#### Módulo 4: Programas de Formación
+## Módulo 4 — Líneas y Redes de Conocimiento
+**Tablas:** `knowledge_network`, `tech_line`
 
-**¿De dónde sale?**
+**¿Qué hace?**
+Organiza las líneas tecnológicas y redes de conocimiento que agrupan y clasifican los programas de formación.
 
-En V6 (`data-model.md`) la entidad `student_group` tiene el atributo `program_name`. En V7 (`data-model.md`) el `schedule` tiene un atributo `program_name` directamente.
-
-En V8 (`data-model.md`) la entidad `training_group` incluye `start_date` y `end_date` que corresponden al ciclo de un programa de formación.
-
-**Justificación:** En el SENA todo grupo de formación pertenece a un programa titulado (técnico o tecnólogo) registrado en SOFIA Plus. Sin el programa no existe la ficha ni el grupo. Los archivos V6 a V9 referencian `program_name` de forma implícita; formalizarlo como módulo propio es necesario para la integridad referencial del modelo relacional ya entregado.
-
----
-
-#### Módulo 5: Fichas de Caracterización
-
-**¿De dónde sale?**
-
-En V6 (`requirements.md`) existe la entidad `student_group` con `code` y `program_name`. En V7 (`data-model.md`) aparece `group_code`. En V8 y V9 se llama `training_group` con atributos `code`, `name`, `student_count`, `is_active`.
-
-**Justificación:** En el SENA lo que los archivos llaman `training_group` o `student_group` es institucionalmente una **ficha de caracterización**, identificada con un número único en SOFIA Plus (ej. ficha 2845631). Cada ficha tiene estado (`en ejecución`, `terminada`) y fechas propias. El módulo aparece en todos los archivos del instructor y es la unidad operativa central del SENA.
+**Justificación por archivo:**
+- **V8 `data-model.md`** → `instructor.expertise_area` es un array de áreas de conocimiento; en el SENA estas áreas corresponden a redes de conocimiento específicas.
+- **V9 `data-model.md`** → `instructor.expertise_area` persiste y se usa para habilitar al instructor en competencias de una red de conocimiento.
+- **V8 `requirements.md`** → `FR4`: clasificar instructores por tipo y área de expertise presupone una estructura de conocimiento formal.
+- **Portal SOFIA Plus (SENA):** los programas de formación se estructuran bajo líneas tecnológicas (Tecnología de la Información, Industria, Agropecuaria, etc.) que agrupan redes de conocimiento. Sin este módulo no es posible filtrar la oferta académica.
 
 ---
 
-#### Módulo 6: Competencias
+## Módulo 5 — Oferta y Programas de Formación
+**Tablas:** `training_program`
 
-**¿De dónde sale?**
+**¿Qué hace?**
+Gestiona programas de formación en sus distintas modalidades (presencial, virtual, a distancia), niveles (técnico, tecnólogo, complementario) y versiones, con sus estados del ciclo de vida.
 
-En V8 (`data-model.md`) el instructor tiene el atributo `expertise_area` definido como array de strings, describiendo las áreas de conocimiento que maneja. En V9 se mantiene el mismo atributo.
-
-En V8 (`requirements.md`) se menciona que los instructores se asignan según su área de competencia.
-
-**Justificación:** En el SENA los programas de formación se dividen en **competencias** (unidades de aprendizaje), y los instructores se asignan a horarios por competencia, no por "materia" genérica. El atributo `expertise_area` de los archivos V8 y V9 es la referencia directa a este concepto. El modelo relacional entregado incluye la tabla `competencia` vinculada a `programa_formacion`.
-
----
-
-#### Módulo 7: Resultados de Aprendizaje (RAP)
-
-**¿De dónde sale?**
-
-En V8 y V9 (`data-model.md`) el campo `expertise_area` del instructor es un array, lo que implica múltiples niveles de desagregación del conocimiento. El `db-design.md` de V9 define índices sobre las áreas de competencia para consultas de asignación.
-
-**Justificación:** Cada competencia del SENA tiene varios **resultados de aprendizaje (RAP)** que son el nivel más granular del currículo institucional. Aunque los archivos del instructor no los nombran explícitamente con ese término, la estructura jerárquica `programa → competencia → RAP` está implícita en los datos de V8 y V9. El modelo relacional ya entregado los incluye como tabla `resultado_aprendizaje`.
+**Justificación por archivo:**
+- **V6 `data-model.md`** → `student_group.program_name` — el grupo pertenece a un programa; ese programa debe existir como entidad propia.
+- **V6 `requirements.md`** → *"Create and list student group records with code, **program name** and learner count"*.
+- **V7 `prd.md`** → scope incluye gestión de schedules que están vinculados a programas de formación.
+- **V7 `idea-refined.md`** → *"centralized scheduling system"* presupone programas sobre los cuales se programan los horarios.
+- **V8 `requirements.md`** → contexto: *"training center operations"* — los centros ejecutan programas de formación.
+- **Portal SOFIA Plus (SENA):** estados formales del programa: En análisis, En elaboración, Pendiente de aprobación, Aprobado, En ejecución, Activo, Inactivo, Suspendido. Sin programa no existe ficha.
 
 ---
 
-### Grupo 3 — Infraestructura y Recursos
+## Módulo 6 — Programa Académico (Competencias y RAP)
+**Tablas:** `competency`, `learning_outcome`
+
+**¿Qué hace?**
+Modela las competencias de cada programa y sus resultados de aprendizaje (RAP), que son la unidad mínima del currículo SENA y el criterio de asignación de instructores.
+
+**Justificación por archivo:**
+- **V8 `data-model.md`** → `instructor.expertise_area` apunta directamente a competencias específicas del SENA.
+- **V8 `requirements.md`** → `FR4`: *"classify instructors... expertise area"* — la habilitación es por competencia, no por materia genérica.
+- **V9 `data-model.md`** → `schedule_block` puede asociarse a una competencia específica (campo implícito en `expertise_area`).
+- **V9 `ux-contract.md`** → flujo de creación de bloque de horario incluye selección de competencia orientada.
+- **Diseño curricular oficial SENA:** todo programa se divide en competencias (unidades de aprendizaje), y cada competencia tiene Resultados de Aprendizaje (RAP). Los instructores se asignan por competencia y se certifican aprendices por RAP aprobados.
 
 ---
 
-#### Módulo 8: Ambientes de Aprendizaje
+## Módulo 7 — Instructores
+**Tablas:** `instructor`, `instructor_expertise`
 
-**¿De dónde sale?**
+**¿Qué hace?**
+Administra instructores de planta y contratistas, sus perfiles completos, disponibilidad, habilitación por competencia y tipo de vinculación.
 
-Presente en todos los archivos. En V6 se llama `classroom`. En V7 se llama `classroom` con `capacity` y `location`. En V8 se renombra a `environment` con tipo (`classroom`, `laboratory`, `virtual`) y lista de equipos. En V9 se llama `room`.
-
-En V8 (`requirements.md`):
-
-> *"The system must allow coordinators to create, update, list, and deactivate learning environments."* — FR1, V8
-
-**Justificación:** Es una de las 3 entidades núcleo del sistema (junto con instructor y ficha). Aparece en los 4 archivos del instructor. En el SENA cada ambiente tiene código, tipo y capacidad registrados institucionalmente.
-
----
-
-#### Módulo 9: Equipos y Recursos del Ambiente
-
-**¿De dónde sale?**
-
-En V8 (`data-model.md`) la entidad `environment` incluye el atributo `equipment_item` definido como array de strings con máximo 20 ítems.
-
-En V9 (`data-model.md`) la entidad `room` también tiene `equipment_item` como array.
-
-**Justificación:** Los archivos V8 y V9 modelan los equipos como un arreglo dentro del ambiente. Extraerlos a su propio módulo (`equipo_ambiente`) permite gestionar mantenimiento, disponibilidad y reemplazo de equipos de forma independiente, tal como lo requiere la operación real de un centro SENA. El modelo relacional entregado ya lo refleja con la tabla `equipo_ambiente`.
+**Justificación por archivo:**
+- **V6 `data-model.md`** → entidad `instructor` con: `document_number`, `full_name`, `email`, `instructor_type (staff|contractor)`.
+- **V7 `data-model.md`** → `Instructor` con campo `max_hours_per_week` — carga horaria máxima según contrato.
+- **V7 `backlog.md`** → `HU-001: Create Instructor` con criterio *"Email must be unique"*.
+- **V8 `requirements.md`** → `FR3`: *"create, update, list, and deactivate instructors"* y `FR4`: *"classify instructors by contract type: staff or contractor"*.
+- **V8 `data-model.md`** → entidad `instructor`: name, email, type, expertise_area.
+- **V8 `ux-contract.md`** → pantallas `InstructorList` e `InstructorForm`, flujo `CRU4`.
+- **V9 `data-model.md`** → versión más completa: `first_name`, `last_name`, `email`, `phone`, `document_id`, `hire_type`, `expertise_area`, `is_active`. Campos PII explícitos.
+- **V9 `db-design.md`** → colección `instructor` con todos sus índices de búsqueda.
 
 ---
 
-#### Módulo 10: Centro de Formación / Sede
+## Módulo 8 — Ambientes de Aprendizaje
+**Tablas:** `environment`, `equipment`
 
-**¿De dónde sale?**
+**¿Qué hace?**
+Gestiona ambientes de formación (aulas, laboratorios, talleres, virtuales), sus recursos físicos, capacidad y disponibilidad real por franja horaria y sede.
 
-En V8 (`requirements.md`) el contexto define:
-
-> *"Internal scheduling product for training center operations."*
-
-En V8 (`data-model.md`) el usuario tiene el atributo `centro_id` y el ambiente tiene `centro_id`. En V8 (`security-threat-model.md`) se menciona el alcance por centro de formación como límite de acceso.
-
-**Justificación:** El SENA opera con múltiples centros de formación por regional. Todos los demás módulos (ambientes, instructores, usuarios, fichas) pertenecen a un centro específico. Los archivos V8 y V9 referencian implícitamente esta estructura cuando definen el alcance del sistema. El modelo relacional entregado lo incluye como tabla `centro_formacion`.
-
----
-
-### Grupo 4 — Gestión de Horarios
-
----
-
-#### Módulo 11: Horarios / Programación de Sesiones
-
-**¿De dónde sale?**
-
-Es la entidad principal en todos los archivos. En V6 se llama `schedule` con `classroom_id`, `student_group_id`, `instructor_id`, `day`, `start_time`, `end_time`. En V7 se llama `Schedule` y se vincula con `TimeSlot`. En V8 se llama `schedule` con `environment_id`, `training_group_id`, `instructor_id`. En V9 se llama `schedule_block` con validación `end > start` y detección de conflictos.
-
-En V8 (`requirements.md`):
-
-> *"The system must allow coordinators to create and update schedules linking environment, training group, instructor, day, time range, and notes."* — FR5, V8
-
-**Justificación:** Es el módulo central del sistema. Presente en los 4 archivos del instructor. Vincula todas las demás entidades. En el SENA corresponde a la programación de ambientes que se gestiona desde SOFIA Plus.
+**Justificación por archivo:**
+- **V6 `data-model.md`** → entidad `classroom` con: `code`, `name`, `location`, `capacity`. Primera aparición.
+- **V7 `data-model.md`** → entidad `Classroom` con `location` — ubicación física del ambiente.
+- **V7 `backlog.md`** → `HU-002: Create Classroom` con criterio *"Capacity > 0"*.
+- **V8 `requirements.md`** → `FR1`: *"create, update, list, and deactivate learning environments"*.
+- **V8 `data-model.md`** → entidad `environment` con: `name`, `capacity`, `type`, `equipment_item` (array de equipos).
+- **V8 `ux-contract.md`** → pantallas `EnvironmentList` y `EnvironmentForm`, flujo `CRU1`.
+- **V8 `query_patterns`** → *"Find Available Environments"* — índice en capacity + time range para verificar disponibilidad.
+- **V9 `data-model.md`** → entidad `room` con: `name`, `capacity`, `location`, `equipment_item`, `is_active`.
+- **Tabla `equipment`:** El campo `equipment_item` array en V8/V9 se normaliza a tabla propia para gestionar mantenimiento y estado de cada equipo.
 
 ---
 
-#### Módulo 12: Franjas Horarias / Jornadas
+## Módulo 9 — Fichas y Franjas Horarias
+**Tablas:** `training_group` + `time_slot` (del Módulo 3)
 
-**¿De dónde sale?**
+**¿Qué hace?**
+Controla las fichas de caracterización (grupos de formación), sus jornadas asignadas, bloques horarios y vigencias de programación.
 
-En V7 (`data-model.md`) existe la entidad `TimeSlot` como entidad independiente:
-
-> *"TimeSlot: Represents a slice of time in a week. Attributes: day_of_week (Int 0-6), start_time (Time), end_time (Time)."*
-
-En V6, V8 y V9 los campos `start_time` y `end_time` están directamente en el horario, pero V7 los separa en su propia entidad reconociendo que son configurables.
-
-**Justificación:** El SENA maneja jornadas definidas institucionalmente (mañana, tarde, noche, madrugada). V7 fue el único archivo que lo formalizó como entidad separada `TimeSlot`, lo que demuestra que el equipo identificó esta necesidad. El modelo relacional entregado lo refleja como tabla `jornada`.
-
----
-
-#### Módulo 13: Detección de Conflictos
-
-**¿De dónde sale?**
-
-En V7 (`prd.md`) es un requisito explícito:
-
-> *"The system MUST prevent double-booking an instructor."*
-> *"The system MUST prevent double-booking a classroom."*
-
-En V8 (`requirements.md`):
-
-> *"The system must prevent obviously invalid schedules such as missing instructor, missing environment, or invalid time range."* — FR6, V8
-
-En V9 (`requirements.md`) se detalla como funcionalidad completa:
-
-> *"Conflict detection: Enforce no double-booking for room, training group, or instructor within overlapping time ranges."*
-
-En V9 (`data-model.md`) se definen índices compuestos específicos para detección de conflictos en la colección `schedule_block`.
-
-**Justificación:** Los 4 archivos del instructor mencionan la prevención de conflictos. V7 lo pone como requisito MUST. V9 lo implementa con índices de base de datos. Es una función transversal que merece módulo propio.
+**Justificación por archivo:**
+- **V6 `data-model.md`** → entidad `student_group` con: `code`, `program_name`, `learner_count`.
+- **V6 `requirements.md`** → *"Create and list student group records with code, program name and learner count"*.
+- **V7 `data-model.md`** → `Schedule.group_code` — el horario referencia un código de grupo.
+- **V8 `requirements.md`** → `FR2`: *"create, update, list, and deactivate training groups"* y `US2`: *"organize students into distinct cohorts for scheduling"*.
+- **V8 `data-model.md`** → entidad `training_group`: name, student_count, start_date, end_date.
+- **V9 `data-model.md`** → entidad `training_group` con campo `code` (número institucional de ficha).
+- **Portal SOFIA Plus (SENA):** en el SENA un grupo de formación se llama **ficha de caracterización** con número único (ej. 2845631), estados de ejecución y fechas de vigencia. El campo `code`/`ficha_number` del V9 corresponde exactamente a esto.
 
 ---
 
-### Grupo 5 — Seguimiento y Control
+## Módulo 10 — Aprendices
+**Tablas:** `learner`, `enrollment`
+
+**¿Qué hace?**
+Gestiona perfiles de aprendices, su matrícula en fichas de formación, historial básico y relación con la programación académica.
+
+**Justificación por archivo:**
+- **V6 `data-model.md`** → `student_group.learner_count` presupone aprendices registrados en el sistema.
+- **V6 `requirements.md`** → *"student group records with learner count"* — los estudiantes son actores presentes desde la versión inicial.
+- **V8 `data-model.md`** → `training_group.student_count` requiere que exista una entidad aprendiz para que el conteo sea real y no manual.
+- **V8 `requirements.md`** → `US2`: *"organize **students** into distinct cohorts"*.
+- **V9 `data-model.md`** → `training_group.student_count` persiste como campo numérico, lo que implica una fuente de datos de aprendices.
+- **Portal SOFIA Plus (SENA):** los aprendices se matriculan en fichas a través del sistema; sin este módulo no es posible cruzar disponibilidad de ambiente con el número real de aprendices inscritos.
 
 ---
 
-#### Módulo 14: Observaciones Operacionales
+## Módulo 11 — Motor de Horarios
+**Tablas:** `schedule_block`
 
-**¿De dónde sale?**
+**¿Qué hace?**
+Registra asignaciones entre ficha, instructor y ambiente, validando cruces de tiempo y ocupación. Es la tabla central del sistema.
 
-Presente en los 4 archivos. En V6 (`data-model.md`) es la entidad `observation` con `schedule_id` y `note`. En V7 agrega `type` y `created_by`. En V8 agrega `reference_type` (polymorphic: schedule o instructor) y `reference_id`. En V9 agrega `severity` con valores `info`, `warning`, `critical`.
-
-En V6 (`requirements.md`):
-
-> *"Create and list observations linked to a schedule."* — FR (V6)
-
-En V8:
-
-> *"The system must allow observations to be registered and associated with a schedule, instructor, or operational context."* — FR7, V8
-
-**Justificación:** Las observaciones evolucionaron a lo largo de las 4 versiones, incorporando tipo de referencia y niveles de severidad. Son el mecanismo de seguimiento operativo del sistema y están en todos los archivos del instructor.
-
----
-
-#### Módulo 15: Auditoría / Trazabilidad
-
-**¿De dónde sale?**
-
-En V8 (`security-threat-model.md`) se definen controles de trazabilidad como requisito de seguridad no funcional. En V8 (`requirements.md`):
-
-> *"NFR10: AppSec evidence must reference concrete controls and files."*
-> *"NFR11: Release readiness must include deployment and rollback commands."*
-
-En V7 (`appsec-report.md`) se documenta la necesidad de registrar acciones del sistema para auditoría interna.
-
-**Justificación:** Los archivos V7 y V8 del instructor incluyen reportes de seguridad (AppSec) que exigen trazabilidad de cambios. En el SENA esto es obligatorio por la Oficina de Control Interno. El modelo relacional entregado lo incluye como tabla `auditoria` con campos `tabla_afectada`, `accion`, `datos_anteriores`, `datos_nuevos`, `usuario_id`.
+**Justificación por archivo:**
+- **V6 `data-model.md`** → entidad `schedule` con: `classroom_id`, `student_group_id`, `instructor_id`, `day`, `start_time`, `end_time`, `status`.
+- **V6 `requirements.md`** → *"Create and list schedule records linked to classroom, student group and instructor"* y *"Validate schedule day, start time and end time before persistence"*.
+- **V7 `data-model.md`** → entidad `Schedule` con FK a `instructor_id`, `classroom_id`, `time_slot_id`. Introduce la relación con `TimeSlot`.
+- **V7 `prd.md`** → *"The system MUST prevent double-booking an instructor"* y *"MUST prevent double-booking a classroom"*.
+- **V7 `backlog.md`** → `HU-004: Assign Schedule` con criterio *"Blocks if conflict exists"*.
+- **V7 `prd.md`** → `EPC-2 / FEA-2.1`: *"Schedule Assignment — assign an instructor to a classroom and time slot"*.
+- **V8 `requirements.md`** → `FR5`: *"create and update schedules linking environment, training group, instructor, day, time range, and notes"* y `FR6`: *"prevent obviously invalid schedules"*.
+- **V8 `data-model.md`** → entidad `schedule` con query_patterns: *"Get Instructor Schedules"*, *"Find Available Environments"*, *"Get Group Schedule Overview"* — índices compuestos.
+- **V8 `ux-contract.md`** → pantallas `ScheduleList` y `ScheduleForm`, flujo `CRU2`, regla de negocio de solapamiento.
+- **V9 `data-model.md`** → entidad `schedule_block` con `is_cancelled` para filtrado rápido e índices de detección de conflictos.
+- **V9 `db-design.md`** → índices compuestos: `[room_id, start_time, end_time]`, `[training_group_id, start_time, end_time]`, `[instructor_id, start_time, end_time]`.
 
 ---
 
-### Grupo 6 — Configuración del Sistema
+## Módulo 12 — Observaciones e Incidencias
+**Tablas:** `observation`
+
+**¿Qué hace?**
+Permite registrar novedades, conflictos, bloqueos, reprogramaciones y seguimiento de situaciones especiales ligadas a un horario, instructor o ambiente.
+
+**Justificación por archivo:**
+- **V6 `data-model.md`** → entidad `observation` con: `schedule_id`, `note`, `created_at`.
+- **V6 `requirements.md`** → *"Create and list observations linked to a schedule"*.
+- **V7 `data-model.md`** → entidad `Observation` con: `schedule_id`, `content`, `type`, `created_by`.
+- **V7 `prd.md`** → *"The system MUST allow recording observations for a schedule entry"*.
+- **V7 `backlog.md`** → `HU-005: Add Observation` — *"Can add note to schedule"*.
+- **V8 `requirements.md`** → `FR7`: *"allow observations to be registered and associated with a schedule, instructor, or operational context"*.
+- **V8 `data-model.md`** → entidad `observation` con relación polimórfica: `reference_type` (schedule|instructor) + `reference_id`. Query pattern: *"List Observations for Instructor/Schedule"*.
+- **V8 `ux-contract.md`** → pantallas `ObservationList` y `ObservationForm`, flujo `CRU5`.
+- **V9 `data-model.md`** → campo `severity`: info | warning | critical — permite clasificar la gravedad de la novedad.
+- **V9 `db-design.md`** → índice `[schedule_block_id]` para recuperación rápida de observaciones por bloque.
 
 ---
 
-#### Módulo 16: Configuración General
+## Módulo 13 — Proyectos Formativos
+**Tablas:** `formative_project`, `project_milestone`, `project_instructor`
 
-**¿De dónde sale?**
+**¿Qué hace?**
+Gestiona proyectos formativos de programas técnicos y tecnólogos, su trazabilidad, hitos de avance, revisión e investigación aplicada.
 
-En V8 (`requirements.md`) los NFR definen parámetros configurables del sistema:
-
-> *"NFR1: Build must be reproducible from a clean checkout."*
-> *"NFR4: Docker Compose must start database, backend, and frontend as separate services."*
-
-En V8 (`data-model.md`) y V9 se definen valores permitidos para atributos como `status`, `type`, `severity`, `hire_type` que en producción deben ser configurables por administrador, no hardcodeados.
-
-En V9 (`requirements.md`) se menciona explícitamente `.env.example` como mecanismo de configuración del sistema.
-
-**Justificación:** Todo sistema institucional requiere una tabla de parámetros generales (año lectivo activo, tipos de ambiente válidos, estados posibles de una ficha, duración estándar de sesiones). Los archivos V8 y V9 definen estos valores como constantes; un sistema real los gestiona dinámicamente. El modelo relacional entregado los captura en la tabla `config_sistema`.
-
----
-
-## Lista
-
-| # | Módulo | V6 | V7 | V8 | V9 |
-|---|---|:---:|:---:|:---:|:---:|
-| 1 | Instructores | ✅ FR3 | ✅ FEA-1.1 | ✅ FR3 | ✅ entidad |
-| 2 | Tipo de Contrato | ✅ atributo | ✅ max_hours | ✅ FR4 | ✅ hire_type |
-| 3 | Usuarios y Roles | — | ✅ admin | ✅ user_roles | ✅ stakeholders |
-| 4 | Programas de Formación | ✅ program_name | ✅ program_name | ✅ training_group | ✅ training_group |
-| 5 | Fichas de Caracterización | ✅ student_group | ✅ group_code | ✅ training_group | ✅ training_group |
-| 6 | Competencias | — | — | ✅ expertise_area | ✅ expertise_area |
-| 7 | Resultados de Aprendizaje | — | — | ✅ implícito | ✅ implícito |
-| 8 | Ambientes de Aprendizaje | ✅ FR1 | ✅ Classroom | ✅ FR1 | ✅ Room |
-| 9 | Equipos y Recursos | — | — | ✅ equipment_item | ✅ equipment_item |
-| 10 | Centro de Formación | — | — | ✅ contexto | ✅ contexto |
-| 11 | Horarios / Sesiones | ✅ FR4-5 | ✅ Schedule | ✅ FR5 | ✅ schedule_block |
-| 12 | Franjas Horarias | ✅ start/end | ✅ TimeSlot | ✅ start/end | ✅ start/end |
-| 13 | Detección de Conflictos | — | ✅ MUST | ✅ FR6 | ✅ índices |
-| 14 | Observaciones | ✅ FR5 | ✅ Observation | ✅ FR7 | ✅ severity |
-| 15 | Auditoría / Trazabilidad | — | ✅ appsec | ✅ NFR10 | ✅ NFR |
-| 16 | Configuración General | — | — | ✅ NFR | ✅ .env |
+**Justificación por archivo:**
+- **V8 `requirements.md`** → contexto: gestión de `training_groups` que en programas titulados SENA siempre están vinculados a un proyecto formativo activo.
+- **V8 `data-model.md`** → `training_group` con `start_date` y `end_date` — fechas que enmarcan la ejecución del proyecto formativo.
+- **V9 `data-model.md`** → `training_group` tiene `status` (en_ejecucion | terminada) que corresponde al ciclo del proyecto formativo.
+- **V7 `prd.md`** → scope incluye gestión de grupos que en SENA ejecutan proyectos formativos.
+- **Imagen del instructor:** módulo 13 descrito explícitamente como *"Gestiona proyectos formativos de técnicos y tecnólogos, su trazabilidad, hitos, revisión y posible enfoque de investigación"*.
+- **Estructura curricular SENA:** los programas titulados (técnico y tecnólogo) tienen proyectos formativos como estrategia pedagógica obligatoria definida en el diseño curricular. Sin proyecto no se pueden certificar competencias.
 
 ---
 
-*Documento elaborado a partir del análisis de los 4 archivos entregados por el instructor: V6, V7, V8 y V9 del proyecto SENA Schedule Manager.*
+## Módulo 14 — Coordinación y Evaluación
+**Tablas:** `evaluation_session`, `evaluation_result`
+
+**¿Qué hace?**
+Permite que coordinación asigne horas o espacios para revisar y calificar proyectos formativos sin afectar otros espacios académicos del Motor de Horarios.
+
+**Justificación por archivo:**
+- **V8 `requirements.md`** → rol *"Academic coordinator: manages schedules, environments, groups, instructors"* — incluye coordinar evaluaciones.
+- **V8 `ux-contract.md`** → pantalla `Dashboard (Academic Coordinator)`: *"Vista general de estadísticas y accesos directos"* — incluye acceso a sesiones de evaluación.
+- **V8 `requirements.md`** → `FR5`: el sistema permite asignar ambientes con notas descriptivas; las evaluaciones son un caso específico de sesión con ambiente reservado.
+- **V9 `ux-contract.md`** → flujo crítico: *"Deshabilitar entidad con advertencia de bloques futuros afectados"* — implica sesiones de evaluación programadas.
+- **Imagen del instructor:** módulo 14 descrito como *"Permite que coordinación asigne horas o espacios para revisar y calificar proyectos sin afectar otros espacios académicos"*.
+- **Lógica SENA:** las evaluaciones de proyectos formativos requieren un ambiente y franja horaria exclusiva, separada del horario de formación regular, para evitar conflictos con el Motor de Horarios (Módulo 11).
+
+---
+
+## Módulo 15 — Notificaciones y Trazabilidad
+**Tablas:** `notification`, `change_history`, `audit_log`
+
+**¿Qué hace?**
+Comunica eventos relevantes del sistema a los usuarios y conserva historial completo de cambios, revisiones y decisiones para auditoría y control interno.
+
+**Justificación por archivo:**
+- **V8 `db-design.md`** → `migration_strategy` incluye una colección `db_migrations` para rastrear cambios — principio de trazabilidad a nivel de datos.
+- **V8 `requirements.md`** → `NFR9`: *"Error responses must not leak raw internal errors"* — requiere logging controlado.
+- **V8 `requirements.md`** → `NFR10`: *"AppSec evidence must reference concrete controls and files"* — auditoría obligatoria.
+- **V8 `security-threat-model.md`** → controles de trazabilidad de acciones como parte del modelo de seguridad.
+- **V9 `security-threat-model.md`** → amplía controles de auditoría y registro de cambios.
+- **V7 `appsec-report.md`** → evidencia de controles OWASP que requieren registro de acciones del sistema.
+- **V9 `db-design.md`** → `backup_recovery`: *"Los logs de operaciones serán monitoreados para detectar anomalías y facilitar la recuperación a un punto en el tiempo"*.
+- **Imagen del instructor:** módulo 15 descrito como *"Comunica eventos relevantes y conserva historial de cambios, revisiones y decisiones del sistema"*.
+- **Estructura SENA:** la Oficina de Control Interno del SENA requiere trazabilidad de todas las acciones sobre datos académicos (Ley 87 de 1993).
+
+---
+
+## Tabla Resumen
+
+| # | Módulo | Tablas | Fuente principal en archivos | Complemento SENA |
+|---|--------|--------|------------------------------|------------------|
+| 1 | Seguridad y Acceso | user, role, user_role, permission, session | user_roles V8, NFR8, security V8/V9, LoginScreen UX | Control de acceso por rol |
+| 2 | Estructura Institucional | regional, training_center, headquarter | Contexto "training center" V8, location V6/V9 | Decreto 249/2004 |
+| 3 | Catálogos Base | catalog_type, catalog_item, time_slot | allowed_values V8, TimeSlot V7, HU-003 V7 | Jornadas y parámetros configurables |
+| 4 | Líneas y Redes | knowledge_network, tech_line | expertise_area V8/V9, FR4 V8 | SOFIA Plus — líneas tecnológicas |
+| 5 | Oferta y Programas | training_program | program_name V6, scope V7, contexto V8 | SOFIA Plus — estados del programa |
+| 6 | Programa Académico | competency, learning_outcome | expertise_area V8, schedule→competency V9 | Diseño curricular SENA — RAP |
+| 7 | Instructores | instructor, instructor_expertise | Entidad instructor V6/V7/V8/V9, FR3/FR4/US3 V8 | Planta y contratistas SENA |
+| 8 | Ambientes | environment, equipment | Entidad classroom/environment/room V6-V9, FR1/US1 V8 | Ambientes de aprendizaje |
+| 9 | Fichas y Franjas | training_group | student_group V6, training_group V8, code V9, FR2 V8 | Fichas SOFIA Plus |
+| 10 | Aprendices | learner, enrollment | learner_count V6, student_count V8/V9, US2 V8 | Matrícula SOFIA Plus |
+| 11 | Motor de Horarios | schedule_block | schedule V6/V7/V8, schedule_block V9, FR5/FR6 V8 | Programación académica central |
+| 12 | Observaciones | observation | observation V6/V7/V8/V9, FR7/US5 V8, severity V9 | Novedades operacionales |
+| 13 | Proyectos Formativos | formative_project, project_milestone, project_instructor | training_group context V8/V9, imagen instructor | Proyectos formativos titulados |
+| 14 | Coordinación y Evaluación | evaluation_session, evaluation_result | Dashboard V8, FR5 sesiones, imagen instructor | Evaluación de proyectos |
+| 15 | Notificaciones y Trazabilidad | notification, change_history, audit_log | audit_log V8, appsec V7, NFR9/NFR10 V8, security V9 | Control Interno SENA |
