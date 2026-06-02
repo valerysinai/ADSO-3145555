@@ -3,6 +3,13 @@
 ## Entidades, relaciones y justificación
 
 ---
+Link repo Majo:
+
+[ADSO-3145555/03-execution/15-week/03-optional-activity at main · MariaOyola/ADSO-3145555 · GitHub](https://github.com/MariaOyola/ADSO-3145555/tree/main/03-execution/15-week/03-optional-activity)
+
+Link repo Mariana:
+
+[GitHub - pemarival/15-week_02-06-26_modulo_estructura_institucional_del_sena · GitHub](https://github.com/pemarival/15-week_02-06-26_modulo_estructura_institucional_del_sena)
 
 Link repo Majo:
 
@@ -21,7 +28,7 @@ pais
              └── centro_formacion  (118 centros oficiales)
                    ├── sede  (ubicaciones físicas del centro)  ←── latitud/longitud OBLIGATORIOS
                    ├── nodo_sena  (Tecnoacademias y Tecnoparques)
-                   └── traslado_instructor  (instructor prestado temporalmente a otro centro)
+                   └── traslado_instructor 
 
 distancia_sedes  (tabla auxiliar: tiempo de desplazamiento entre pares de sedes)
 ```
@@ -42,7 +49,7 @@ distancia_sedes  (tabla auxiliar: tiempo de desplazamiento entre pares de sedes)
 
 **¿Para qué?** Representa cada departamento de Colombia donde el SENA tiene presencia.
 
-**Campos clave:** `nombre`, `codigo` (código DANE), `total_centros`
+**Campos clave:** `nombre`, `codigo` (Codigo DANE), `total_centros`
 
 **Datos reales de la imagen:**
 
@@ -60,7 +67,7 @@ distancia_sedes  (tabla auxiliar: tiempo de desplazamiento entre pares de sedes)
 | Atlántico               | 4       |
 | ... y 22 regionales más | ...     |
 
-**Justificación:** La imagen del instructor muestra explícitamente las 32+ regionales con sus centros. Sin esta entidad no es posible filtrar centros por región ni gobernar la operación por territorio.
+**Justificación:** La imagen muestra explícitamente las 32+ regionales con sus centros. Sin esta entidad no es posible filtrar centros por región ni gobernar la operación por territorio.
 
 ---
 
@@ -153,8 +160,12 @@ distancia_sedes  (tabla auxiliar: tiempo de desplazamiento entre pares de sedes)
 
 ---
 
+<<<<<<< HEAD
 ### 8. `distancia_sedes` ← **Nueva entidad — origen: audio del instructor**
 
+=======
+### 8. `distancia_sedes` ← **Nueva entidad 
+>>>>>>> 2433f724009761dd3c91a225f0bd56ee76040f69
 **¿Para qué?** Precalcula y almacena el tiempo estimado de desplazamiento en minutos entre cada par de sedes del SENA.
 
 **Campos clave:**
@@ -178,8 +189,12 @@ El Motor de Horarios (**Módulo 8**) consulta esta tabla **antes de asignar un b
 
 ---
 
+<<<<<<< HEAD
 ### 9. `traslado_instructor` ← **Nueva entidad — origen: audio del instructor**
 
+=======
+### 9. `traslado_instructor` ← **Nueva entidad 
+>>>>>>> 2433f724009761dd3c91a225f0bd56ee76040f69
 **¿Para qué?** Registra cuando un instructor es "prestado" temporalmente de su centro de formación de origen a otro centro receptor, transfiriendo con él sus horas disponibles.
 
 **Campos clave:**
@@ -253,6 +268,7 @@ centro_formacion (1) ────────< (N) traslado_instructor [como cen
 
 ## Fuentes
 
+<<<<<<< HEAD
 | Entidad                 | Fuente archivo instructor                       | Fuente imagen/SENA                                  | Fuente audio instructor                                     |
 | ----------------------- | ----------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------- |
 | `pais`                | Contexto general del sistema                    | Estructura territorial colombiana                   | —                                                          |
@@ -264,3 +280,16 @@ centro_formacion (1) ────────< (N) traslado_instructor [como cen
 | `nodo_sena`           | No está en archivos                            | Tecnoacademias y Tecnoparques — imagen             | —                                                          |
 | `distancia_sedes`     | No está en archivos                            | No está en imagen                                  | Validación de tiempo entre sedes consecutivas en horario   |
 | `traslado_instructor` | No está en archivos                            | No está en imagen                                  | Instructor "prestado" a otro centro, pierde horas en origen |
+=======
+| Entidad | Fuente archivo instructor | Fuente imagen/SENA | Fuente audio instructor |
+|---------|--------------------------|---------------------|------------------------|
+| `pais` | Contexto general del sistema | Estructura territorial colombiana | — |
+| `regional` | Contexto V8 "training center" | 32+ regionales en la imagen | — |
+| `municipio` | `classroom.location` V6, `room.location` V9 | "1.102 municipios" — imagen | — |
+| `tipo_centro` | Implícito en estructura V8/V9 | Tipos en imagen: centro, Tecnoacademia, Tecnoparque | — |
+| `centro_formacion` | `training_center` V8/V9, contexto V6-V9 | 118 centros con nombres reales | Centro = empresa independiente con sus propios recursos |
+| `sede` | `classroom.location` V6, `location` V7/V9 | Múltiples ubicaciones por centro | Caso Caquetá: sedes a 1-2 horas; latitud/longitud NOT NULL |
+| `nodo_sena` | No está en archivos | Tecnoacademias y Tecnoparques — imagen | — |
+| `distancia_sedes` | No está en archivos | No está en imagen | Validación de tiempo entre sedes consecutivas en horario |
+| `traslado_instructor` | No está en archivos | No está en imagen | Instructor "prestado" a otro centro, pierde horas en origen |
+>>>>>>> 2433f724009761dd3c91a225f0bd56ee76040f69
